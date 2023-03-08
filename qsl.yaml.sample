@@ -1,0 +1,33 @@
+
+call: W6BSD
+qrz_key: <yours goes here>
+
+smtp_server: <yours goes here>
+smtp_login: <yours goes here>
+smtp_port: 25
+smtp_from:
+smtp_password: <yours goes here>
+
+font: fonts/DroidSansMono.ttf
+font2: fonts/VeraMono-Italic.ttf
+text_color: (0, 0, 77)
+
+qsl_card: ./default.jpg
+
+mail_template: |
+
+  Hello $fname, and thank you for our QSO!
+
+  Frequency.: $freq_rx MHz
+  Band......: $band
+  Mode......: $mode
+  RST.......: $rst_sent
+  RCVD......: $rst_rcvd
+  Date......: $qso_date
+
+  Our contat has also been confirmed on LOTW.
+
+  I am looking forward for our next QSO.
+
+  73,
+  Your friendly ham.
