@@ -171,6 +171,7 @@ def get_user(qrz, call):
   return qrz
 
 def send_qsl(qso):
+  assert 'email' in qso
   image_name = card(qso)
   send_mail(qso, image_name)
   logging.info('Mail sent to %s at %s', qso['CALL'], qso['email'])
@@ -202,10 +203,19 @@ def main():
   qsos_raw, _ = adif_io.read_from_file(adif_file)
   for qso in qsos_raw:
     user_info = get_user(qrz, qso['CALL'])
-    qso['email'] = 'fred@bsdhost.net' # user_info.email
+    if not user_info.email:
+      logging.warning('No email provided for %s', qso['CALL'])
+      continue
+
+    qso['email'] = 'fred@bsdworld.org' # user_info.email
     qso['country'] = user_info.country
     qso['name'] = user_info.name
     qso['fname'] = user_info.fname.title() if user_info.fname else 'Dear OM'
+
+    if 'RST_SENT' not in qso:
+      qso['RST_SENT'] = '59'
+    if 'RST_RCVD' not in qso:
+      qso['RST_RCVD'] = '59'
 
     qso_date = qso.get('QSO_DATE_OFF', qso['QSO_DATE'])
     qso_time = qso.get('TIME_OFF', qso.get('TIME_ON', '0000'))
