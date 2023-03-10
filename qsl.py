@@ -211,7 +211,7 @@ def main():
       logging.warning('No email provided for %s', qso['CALL'])
       continue
 
-    qso['email'] = "fred@bsdhost.net" #user_info.email
+    qso['email'] = user_info.email
     qso['country'] = user_info.country
     qso['name'] = user_info.name
     qso['fname'] = user_info.fname.title() if user_info.fname else 'Dear OM'
