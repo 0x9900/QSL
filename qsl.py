@@ -39,7 +39,7 @@ CONFIG_LOCATIONS = ['/etc', '~/.local', '.']
 
 logging.basicConfig(level=logging.INFO)
 
-def draw_rectangle(draw, coord, color=(0x28, 0x36, 0x18), width=1, fill=(0x75, 0xDB, 0xCD, 190)):
+def draw_rectangle(draw, coord, color=(0x44, 0x79, 0x9), width=1, fill=(0x75, 0xDB, 0xCD, 190)):
   draw.rectangle(coord, outline=color, fill=fill)
   draw.rectangle(coord, outline=color, width=width)
 
@@ -100,11 +100,10 @@ def card(qso, image_name=None):
     logging.error("The card resolution should be at least 1024x576")
     sys.exit(os.EX_CONFIG)
 
-  big_font = ImageFont.truetype(config.font, 32)
-  small_font = ImageFont.truetype(config.font, 16)
-  xsmall_font = ImageFont.truetype(config.font2, 14)
+  font_call = ImageFont.truetype(config.font_call, 32)
+  font_text = ImageFont.truetype(config.font_text, 16)
+  font_foot = ImageFont.truetype(config.font_foot, 14)
 
-  x_pos = 132
   h_size, v_size = img.size
   ratio = width / h_size
   vsize = int(v_size * ratio)
@@ -115,23 +114,24 @@ def card(qso, image_name=None):
   draw_rectangle(draw, ((112, vsize-220), (912, vsize-20)), width=3)
 
   textbox = ImageDraw.Draw(overlay)
-  left = vsize - 215
-  textbox.text((x_pos, left), f"From: {qso.OPERATOR}", font=big_font, fill=TEXT_COLOR)
-  textbox.text((x_pos, left+38), f"  To: {qso.CALL}", font=big_font, fill=TEXT_COLOR)
-  textbox.text((x_pos, left+85), (f'Mode: {qso.MODE} - Band: {qso.BAND} - '
+  y_pos = vsize - 215
+  x_pos = 132
+  textbox.text((x_pos, y_pos), f"From: {qso.OPERATOR}", font=font_call, fill=TEXT_COLOR)
+  textbox.text((x_pos, y_pos+32), f"  To: {qso.CALL}", font=font_call, fill=TEXT_COLOR)
+  textbox.text((x_pos, y_pos+80), (f'Mode: {qso.MODE} - Band: {qso.BAND} - '
                                   f'RST Send: {qso.RST_SENT} - RST Recieved: {qso.RST_RCVD}'
-                                  ), font=small_font, fill=TEXT_COLOR)
-
+                                  ), font=font_text, fill=TEXT_COLOR)
   date = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X")
-  textbox.text((x_pos, left+110), f'Date: {date}', font=small_font, fill=TEXT_COLOR)
-  textbox.text((x_pos, left+135),
+  textbox.text((x_pos, y_pos+105), f'Date: {date}', font=font_text, fill=TEXT_COLOR)
+  textbox.text((x_pos, y_pos+130),
                f' Rig: {qso.MY_RIG} - Grid: {qso.MY_GRIDSQUARE} - Power: {int(qso.TX_PWR)} Watt',
-               font=small_font, fill=TEXT_COLOR)
-  textbox.text((x_pos, left+165),
-               'Thank you for the QSO, and I will look forward for our next contact, 73',
-               font=xsmall_font, fill=TEXT_COLOR)
+               font=font_text, fill=TEXT_COLOR)
 
-  textbox.text((NEW_WIDTH-90, vsize-30), '@0x9900', font=xsmall_font, fill=(0xff, 0xff, 0xff))
+  textbox.text((x_pos, y_pos+165),
+               'Thank you for the QSO, and I will look forward for our next contact, 73',
+               font=font_foot, fill=TEXT_COLOR)
+
+  textbox.text((NEW_WIDTH-90, vsize-30), '@0x9900', font=font_foot, fill=(0xff, 0xff, 0xff))
 
   img = Image.alpha_composite(img, overlay)
   img = img.convert("RGB")
@@ -211,7 +211,7 @@ def main():
       logging.warning('No email provided for %s', qso['CALL'])
       continue
 
-    qso['email'] = user_info.email
+    qso['email'] = "fred@bsdhost.net" #user_info.email
     qso['country'] = user_info.country
     qso['name'] = user_info.name
     qso['fname'] = user_info.fname.title() if user_info.fname else 'Dear OM'
