@@ -1,18 +1,26 @@
 
-call: W6BSD
+call: <your call>
 qrz_key: <yours goes here>
 
 smtp_server: <yours goes here>
 smtp_login: <yours goes here>
-smtp_port: 25
-smtp_from:
 smtp_password: <yours goes here>
-
-font: fonts/DroidSansMono.ttf
-font2: fonts/VeraMono-Italic.ttf
-text_color: (0, 0, 77)
+smtp_port: 25
+smtp_from: <yours goes here>
 
 qsl_card: ./default.jpg
+
+font_call: fonts/Ubuntu Mono derivative Powerline Bold.ttf
+font_text: fonts/DroidSansMono.ttf
+font_foot: fonts/VeraMono-Italic.ttf
+
+text_color: (0, 0, 77)
+
+# For qrz is used to get the name and email address of your contact.
+# Go on your qrz account page to get and xml api key
+qrz_key: <your key goes here>
+qsl_card: default.jpg
+
 
 mail_template: |
 
