@@ -64,7 +64,7 @@ def send_mail(qso, image):
 
   data = {}
   data['fname'] = qso.fname
-  data['qso_date'] = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X")
+  data['qso_date'] = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X UTC")
   data['freq_rx'] = qso.FREQ_RX
   data['mode'] = qso.MODE
   data['band'] = qso.BAND_RX
@@ -123,7 +123,7 @@ def card(qso, image_name=None):
   textbox.text((x_pos, y_pos+80), (f'Mode: {qso.MODE} - Band: {qso.BAND} - '
                                   f'RST Send: {qso.RST_SENT} - RST Recieved: {qso.RST_RCVD}'
                                   ), font=font_text, fill=TEXT_COLOR)
-  date = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X")
+  date = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X UTC")
   textbox.text((x_pos, y_pos+105), f'Date: {date}', font=font_text, fill=TEXT_COLOR)
   textbox.text((x_pos, y_pos+130),
                f' Rig: {qso.MY_RIG} - Grid: {qso.MY_GRIDSQUARE} - Power: {int(qso.TX_PWR)} Watt',
@@ -192,7 +192,8 @@ def main():
   parser.add_argument("-s", "--show", action="store_true", default=False,
                       help='Show the card')
   parser.add_argument("-k", "--keep", action="store_true", default=False,
-                      help='keep the ADIF file after sending the cards [Default: %(default)s]')
+                      help=('keep the ADIF and the images after sending the cards '
+                            '[Default: %(default)s]'))
 
   opts = parser.parse_args()
 
@@ -229,8 +230,9 @@ def main():
     image_name = card(qso)
     if not opts.no_email:
       send_mail(qso, image_name)
-    logging.info('Mail sent to %s at %s', qso['CALL'], qso['email'])
-    os.unlink(image_name)
+      logging.info('Mail sent to %s at %s', qso['CALL'], qso['email'])
+    if not opts.keep:
+      os.unlink(image_name)
 
   if not opts.keep:
     logging.info('Removing %s', opts.adif_file)
