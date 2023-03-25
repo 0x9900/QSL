@@ -8,9 +8,10 @@ smtp_password: <yours goes here>
 smtp_port: 25
 smtp_from: <yours goes here>
 
-font_call: fonts/Ubuntu Mono derivative Powerline Bold.ttf
-font_text: fonts/DroidSansMono.ttf
-font_foot: fonts/VeraMono-Italic.ttf
+# Full path the your favorite fonts
+font_call: Ubuntu Mono derivative Powerline Bold.ttf
+font_text: DroidSansMono.ttf
+font_foot: VeraMono-Italic.ttf
 
 text_color: (0, 0, 77)
 
@@ -18,6 +19,8 @@ text_color: (0, 0, 77)
 # Go on your qrz account page to get and xml api key
 qrz_key: <your key goes here>
 
+# Full path to your qsl card
+# The card resolution should be at least 1024x576
 qsl_card: default.jpg
 
 signature: Thank you for the QSO, and I will look forward for our next contact, 73

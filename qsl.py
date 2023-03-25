@@ -29,6 +29,7 @@ from tempfile import NamedTemporaryFile
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
+from importlib.resources import files
 
 import qrzlib
 
@@ -39,6 +40,12 @@ NEW_WIDTH = 1024
 
 CONFIG_FILENAME = "qsl.yaml"
 CONFIG_LOCATIONS = ['/etc', '~/.local', '.']
+
+FONTS = {
+  'font_call': 'Ubuntu Mono derivative Powerline Bold.ttf',
+  'font_text': 'DroidSansMono.ttf',
+  'font_foot': 'VeraMono-Italic.ttf',
+}
 
 logging.basicConfig(level=logging.INFO)
 
@@ -150,7 +157,7 @@ def qso_timestamp(day, time='0000'):
   return _dt.timestamp()
 
 
-def read_config():
+def _read_config():
   for path in CONFIG_LOCATIONS:
     filename = os.path.expanduser(os.path.join(path, CONFIG_FILENAME))
     if os.path.exists(filename):
@@ -158,7 +165,7 @@ def read_config():
       try:
         with open(filename, 'r', encoding='utf-8') as cfd:
           config = yaml.safe_load(cfd)
-          return type('Config', (object, ), config)
+          return config
       except ValueError as err:
         logging.error('Configuration error "%s"', err)
         break
@@ -166,8 +173,27 @@ def read_config():
         logging.error('Configuration file syntax error: %s', err)
         break
 
-  logging.error('No configuration file found')
+  logging.error('No configuration file found.')
+  logging.error(' >> Go to https://github.com/0x9900/QSL/ for a configuration example')
   sys.exit(os.EX_CONFIG)
+
+
+def read_config():
+  config = _read_config()
+  for font_name in ("font_call", "font_text", "font_foot"):
+    font_path = config.get(font_name, '')
+    if not os.path.isfile(font_path):
+      logging.warning('Font "%s" not found, using the default font', font_path)
+      font_path = os.path.join(os.path.dirname(__file__), 'fonts', FONTS[font_name])
+      config[font_name] = font_path
+
+  card_path = config.get('qsl_card', '')
+  if not os.path.isfile(card_path):
+    logging.warning('QSL Card "%s" not found, using the default QSL Card', card_path)
+    card_path = os.path.join(os.path.dirname(__file__), 'card', 'default.jpg')
+    config['qsl_card'] = card_path
+
+  return type('Config', (object, ), config)
 
 
 def get_user(qrz, call):
@@ -189,6 +215,7 @@ def move_adif(adif_file):
 def main():
   global config
   config = read_config()
+
   parser = ArgumentParser(description="Send e-QSL cards")
   parser.add_argument("-a", "--adif-file", default=config.adif_file,
                       type=FileType('r'), help='ADIF log file [default: %(default)s]')
