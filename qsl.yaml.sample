@@ -1,5 +1,6 @@
 
 call: <your call>
+adif_file: </path/to/your/logfile.adif>
 
 smtp_server: <yours goes here>
 smtp_login: <yours goes here>
@@ -18,6 +19,8 @@ text_color: (0, 0, 77)
 qrz_key: <your key goes here>
 
 qsl_card: default.jpg
+
+signature: Thank you for the QSO, and I will look forward for our next contact, 73
 
 mail_template: |
 

@@ -17,12 +17,13 @@ import string
 import sys
 import yaml
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, FileType
 from datetime import datetime
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
+from shutil import move
 from tempfile import NamedTemporaryFile
 
 from PIL import Image
@@ -90,7 +91,7 @@ def send_mail(qso, image):
     server.sendmail(config.smtp_from, qso.email, msg.as_string())
 
 
-def card(qso, image_name=None):
+def card(qso, signature, image_name=None):
   width = NEW_WIDTH
   qso = type('QSO', (object,), qso)
 
@@ -129,9 +130,7 @@ def card(qso, image_name=None):
                f' Rig: {qso.MY_RIG} - Grid: {qso.MY_GRIDSQUARE} - Power: {int(qso.TX_PWR)} Watt',
                font=font_text, fill=TEXT_COLOR)
 
-  textbox.text((x_pos, y_pos+165),
-               'Thank you for the QSO, and I will look forward for our next contact, 73',
-               font=font_foot, fill=TEXT_COLOR)
+  textbox.text((x_pos, y_pos+165), signature, font=font_foot, fill=TEXT_COLOR)
 
   textbox.text((NEW_WIDTH-90, vsize-30), '@0x9900', font=font_foot, fill=(0xff, 0xff, 0xff))
 
@@ -180,13 +179,19 @@ def get_user(qrz, call):
   return qrz
 
 
+def move_adif(adif_file):
+  src = adif_file.name
+  dest, _ = os.path.splitext(src)
+  dest = dest + '.old'
+  move(src, dest)
+
+
 def main():
   global config
   config = read_config()
-
   parser = ArgumentParser(description="Send e-QSL cards")
-  parser.add_argument("-a", "--adif-file", required=True,
-                      help='ADIF log file')
+  parser.add_argument("-a", "--adif-file", default=config.adif_file,
+                      type=FileType('r'), help='ADIF log file [default: %(default)s]')
   parser.add_argument("-n", "--no-email", action="store_true", default=False,
                       help='Do not send the mail, just generate the card only')
   parser.add_argument("-s", "--show", action="store_true", default=False,
@@ -194,19 +199,13 @@ def main():
   parser.add_argument("-k", "--keep", action="store_true", default=False,
                       help=('keep the ADIF and the images after sending the cards '
                             '[Default: %(default)s]'))
-
   opts = parser.parse_args()
-
-  adif_file = os.path.expanduser(opts.adif_file)
-  if not os.path.exists(adif_file):
-    logging.error('File "%s" not found', opts.adif_file)
-    sys.exit(os.EX_IOERR)
 
   config.show_cards = True if opts.show else False
   qrz = qrzlib.QRZ()
   qrz.authenticate(config.call, config.qrz_key)
 
-  qsos_raw, _ = adif_io.read_from_file(adif_file)
+  qsos_raw, _ = adif_io.read_from_string(opts.adif_file.read())
   for qso in qsos_raw:
     user_info = get_user(qrz, qso['CALL'])
     if not hasattr(user_info, 'email') or not user_info.email:
@@ -227,16 +226,17 @@ def main():
     qso_time = qso.get('TIME_OFF', qso.get('TIME_ON', '0000'))
     qso['timestamp'] = qso_timestamp(qso_date, qso_time)
 
-    image_name = card(qso)
+    image_name = card(qso, config.signature)
     if not opts.no_email:
       send_mail(qso, image_name)
       logging.info('Mail sent to %s at %s', qso['CALL'], qso['email'])
     if not opts.keep:
       os.unlink(image_name)
 
+  opts.adif_file.close()
   if not opts.keep:
-    logging.info('Removing %s', opts.adif_file)
-    os.unlink(adif_file)
+    logging.info('Removing %s', opts.adif_file.name)
+    move_adif(opts.adif_file)
 
 if __name__ == "__main__":
   main()
