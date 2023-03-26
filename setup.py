@@ -10,22 +10,22 @@ import sys
 
 from setuptools import setup
 
-import qsl
+from eqsl import __version__
 
 __author__ = "Fred C. (W6BSD)"
-__version__ = qsl.__version__
+__version__ = __version__
 __license__ = 'BSD-3'
 
 py_version = sys.version_info[:2]
 if py_version < (3, 8):
-  raise RuntimeError('qsl requires Python 3.8 or later')
+  raise RuntimeError('eqsl requires Python 3.8 or later')
 
 def readme():
   with open('README.md', encoding="utf-8") as fdr:
     return fdr.read()
 
 setup(
-  name='qsl',
+  name='e-qsl',
   version=__version__,
   description='Send contacts confirmation cards (QSL Cards)',
   long_description=readme(),
@@ -34,10 +34,10 @@ setup(
   license=__license__,
   author=__author__,
   author_email='w6bsd@bsdworld.org',
-  py_modules=['qsl'],
+  py_modules=['eqsl'],
   install_requires=['Pillow', 'qrzlib'],
   entry_points = {
-    'console_scripts': ['qsl = qsl:main'],
+    'console_scripts': ['eqsl = eqsl:main'],
   },
   package_data = {
     "sql": ["fonts/*.ttf", "cards/*.jpg"],

@@ -33,12 +33,12 @@ from importlib.resources import files
 
 import qrzlib
 
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 
 TEXT_COLOR = (0, 0, 77)
 NEW_WIDTH = 1024
 
-CONFIG_FILENAME = "qsl.yaml"
+CONFIG_FILENAME = "eqsl.yaml"
 CONFIG_LOCATIONS = ['/etc', '~/.local', '.']
 
 FONTS = {
