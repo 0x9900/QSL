@@ -128,13 +128,13 @@ def card(qso, signature, image_name=None):
   x_pos = 132
   textbox.text((x_pos, y_pos), f"From: {qso.OPERATOR}", font=font_call, fill=TEXT_COLOR)
   textbox.text((x_pos, y_pos+32), f"  To: {qso.CALL}", font=font_call, fill=TEXT_COLOR)
-  textbox.text((x_pos, y_pos+80), (f'Mode: {qso.MODE} - Band: {qso.BAND} - '
-                                  f'RST Send: {qso.RST_SENT} - RST Recieved: {qso.RST_RCVD}'
+  textbox.text((x_pos, y_pos+80), (f'Mode: {qso.MODE} • Band: {qso.BAND} • '
+                                  f'RST Send: {qso.RST_SENT} • RST Recieved: {qso.RST_RCVD}'
                                   ), font=font_text, fill=TEXT_COLOR)
   date = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X UTC")
   textbox.text((x_pos, y_pos+105), f'Date: {date}', font=font_text, fill=TEXT_COLOR)
   textbox.text((x_pos, y_pos+130),
-               f' Rig: {qso.MY_RIG} - Grid: {qso.MY_GRIDSQUARE} - Power: {int(qso.TX_PWR)} Watt',
+               f' Rig: {qso.MY_RIG} • Grid: {qso.MY_GRIDSQUARE} • Power: {int(qso.TX_PWR)} Watt',
                font=font_text, fill=TEXT_COLOR)
 
   textbox.text((x_pos, y_pos+165), signature, font=font_foot, fill=TEXT_COLOR)
