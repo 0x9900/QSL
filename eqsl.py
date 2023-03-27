@@ -33,7 +33,7 @@ from importlib.resources import files
 
 import qrzlib
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 TEXT_COLOR = (0, 0, 77)
 NEW_WIDTH = 1024
@@ -209,7 +209,11 @@ def move_adif(adif_file):
   src = adif_file.name
   dest, _ = os.path.splitext(src)
   dest = dest + '.old'
-  move(src, dest)
+  if adif_file.name == dest:
+    logging.warning('The file "%s" cannot be moved', adif_file.name)
+  else:
+    logging.info('Moving "%s" to "%s"', os.path.basename(adif_file.name), os.path.basename(dest))
+    move(src, dest)
 
 
 def main():
@@ -262,7 +266,6 @@ def main():
 
   opts.adif_file.close()
   if not opts.keep:
-    logging.info('Removing %s', opts.adif_file.name)
     move_adif(opts.adif_file)
 
 if __name__ == "__main__":
