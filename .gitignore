@@ -6,6 +6,8 @@ __pycache__/
 
 *.yaml
 
+sendcard.py
+upload.sh
 
 # C extensions
 *.so
