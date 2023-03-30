@@ -34,8 +34,6 @@ from importlib.resources import files
 
 import qrzlib
 
-__version__ = "0.1.4"
-
 TEXT_COLOR = (0, 0, 77)
 NEW_WIDTH = 1024
 
@@ -109,7 +107,7 @@ def card(qso, signature, image_name=None):
 
   if img.size[0] < NEW_WIDTH and img.size < 576:
     logging.error("The card resolution should be at least 1024x576")
-    sys.exit(os.EX_CONFIG)
+    sys.exit(10)
 
   font_call = ImageFont.truetype(config.font_call, 32)
   font_text = ImageFont.truetype(config.font_text, 16)
@@ -176,7 +174,7 @@ def _read_config():
 
   logging.error('No configuration file found.')
   logging.error(' >> Go to https://github.com/0x9900/QSL/ for a configuration example')
-  sys.exit(os.EX_CONFIG)
+  sys.exit(10)
 
 
 def read_config():

@@ -10,10 +10,8 @@ import sys
 
 from setuptools import setup
 
-from eqsl import __version__
-
 __author__ = "Fred C. (W6BSD)"
-__version__ = __version__
+__version__ = "0.1.7"
 __license__ = 'BSD-3'
 
 py_version = sys.version_info[:2]
@@ -35,7 +33,7 @@ setup(
   author=__author__,
   author_email='w6bsd@bsdworld.org',
   py_modules=['eqsl'],
-  install_requires=['Pillow', 'adif_io', 'qrzlib', 'pyyaml'],
+  install_requires=['Pillow', 'adif_io', 'qrzlib', 'PyYAML'],
   entry_points = {
     'console_scripts': ['eqsl = eqsl:main'],
   },
