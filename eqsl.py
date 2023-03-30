@@ -34,7 +34,7 @@ from importlib.resources import files
 
 import qrzlib
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 TEXT_COLOR = (0, 0, 77)
 NEW_WIDTH = 1024
