@@ -6,7 +6,6 @@
 # All rights reserved.
 #
 
-import adif_io
 import logging
 import os
 import re
@@ -26,6 +25,8 @@ from email.utils import formatdate
 from shutil import move
 from tempfile import NamedTemporaryFile
 
+import adif_io
+
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
@@ -33,7 +34,7 @@ from importlib.resources import files
 
 import qrzlib
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 TEXT_COLOR = (0, 0, 77)
 NEW_WIDTH = 1024
