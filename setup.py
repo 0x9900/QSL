@@ -35,7 +35,7 @@ setup(
   author=__author__,
   author_email='w6bsd@bsdworld.org',
   py_modules=['eqsl'],
-  install_requires=['Pillow', 'adif_io', 'qrzlib'],
+  install_requires=['Pillow', 'adif_io', 'qrzlib', 'yaml'],
   entry_points = {
     'console_scripts': ['eqsl = eqsl:main'],
   },
