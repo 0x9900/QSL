@@ -1,5 +1,7 @@
 
 call: <your call>
+ituzone: <your ituzone>
+cqzone: <your cqzone>
 adif_file: </path/to/your/logfile.adif>
 
 smtp_server: <yours goes here>

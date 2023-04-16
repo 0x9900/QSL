@@ -123,17 +123,19 @@ def card(qso, signature, image_name=None):
   draw_rectangle(draw, ((112, vsize-220), (912, vsize-20)), width=3)
 
   textbox = ImageDraw.Draw(overlay)
+  date = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X UTC")
   y_pos = vsize - 215
   x_pos = 132
-  textbox.text((x_pos, y_pos), f"From: {qso.OPERATOR}", font=font_call, fill=TEXT_COLOR)
-  textbox.text((x_pos, y_pos+32), f"  To: {qso.CALL}", font=font_call, fill=TEXT_COLOR)
-  textbox.text((x_pos, y_pos+80), (f'Mode: {qso.MODE} • Band: {qso.BAND} • '
-                                  f'RST Send: {qso.RST_SENT} • RST Recieved: {qso.RST_RCVD}'
+  textbox.text((x_pos, y_pos), f"From: {qso.OPERATOR}  To: {qso.CALL}",
+               font=font_call, fill=TEXT_COLOR)
+  textbox.text((x_pos, y_pos+55), (f'Mode: {qso.MODE} • Band: {qso.BAND} • '
+                                   f'RST Send: {qso.RST_SENT} • RST Recieved: {qso.RST_RCVD}'
                                   ), font=font_text, fill=TEXT_COLOR)
-  date = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X UTC")
-  textbox.text((x_pos, y_pos+105), f'Date: {date}', font=font_text, fill=TEXT_COLOR)
-  textbox.text((x_pos, y_pos+130),
-               f' Rig: {qso.MY_RIG} • Grid: {qso.MY_GRIDSQUARE} • Power: {int(qso.TX_PWR)} Watt',
+  textbox.text((x_pos, y_pos+80), f'Date: {date}', font=font_text, fill=TEXT_COLOR)
+  textbox.text((x_pos, y_pos+105), f' Rig: {qso.MY_RIG} • Power: {int(qso.TX_PWR)} Watt',
+               font=font_text, fill=TEXT_COLOR)
+  textbox.text((x_pos, y_pos+130), (f'Grid: {qso.MY_GRIDSQUARE} • CQ Zone: {config.ituzone} • '
+                                    f'ITU Zone: {config.cqzone}'),
                font=font_text, fill=TEXT_COLOR)
 
   textbox.text((x_pos, y_pos+165), signature, font=font_foot, fill=TEXT_COLOR)
