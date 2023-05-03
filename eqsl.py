@@ -240,7 +240,12 @@ def main():
   qrz = qrzlib.QRZ()
   qrz.authenticate(config.call, config.qrz_key)
 
-  qsos_raw, _ = adif_io.read_from_string(opts.adif_file.read())
+  try:
+    qsos_raw, _ = adif_io.read_from_string(opts.adif_file.read())
+  except IndexError as err:
+    logging.error('Error reading the ADIF file "%s"', opts.adif_file.name)
+    return os.EX_IOERR
+
   for qso in qsos_raw:
     user_info = get_user(qrz, qso['CALL'])
     if not hasattr(user_info, 'email') or not user_info.email:
