@@ -70,6 +70,7 @@ def send_mail(qso, image):
   msg['Subject'] = f"Digital QSL from {qso.OPERATOR} to {qso.CALL}"
 
   data = {}
+  data['call'] = qso.CALL
   data['fname'] = qso.fname
   data['qso_date'] = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X UTC")
   data['freq_rx'] = qso.FREQ_RX
@@ -77,6 +78,8 @@ def send_mail(qso, image):
   data['band'] = qso.BAND_RX
   data['rst_sent'] = qso.RST_SENT
   data['rst_rcvd'] = qso.RST_RCVD
+  data['rig'] = qso.MY_RIG
+  data['gridsquare'] = qso.MY_GRIDSQUARE
 
   msg.attach(MIMEText(template(data)))
 
