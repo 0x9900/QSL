@@ -94,11 +94,14 @@ def send_mail(qso, image):
   #context = ssl.create_default_context()
   context = ssl._create_unverified_context()
 
-  with smtplib.SMTP(config.smtp_server, config.smtp_port) as server:
-    server.starttls(context=context)
-    server.login(config.smtp_login, config.smtp_password)
-    server.sendmail(config.smtp_from, qso.email, msg.as_string())
-
+  try:
+    with smtplib.SMTP(config.smtp_server, config.smtp_port) as server:
+      server.starttls(context=context)
+      server.login(config.smtp_login, config.smtp_password)
+      server.sendmail(config.smtp_from, qso.email, msg.as_string())
+  except ConnectionRefusedError as err:
+    logging.error('SMTP "%s" connection error %s', config.smtp_server, err)
+    sys.exit(1)
 
 def card(qso, signature, image_name=None):
   width = NEW_WIDTH

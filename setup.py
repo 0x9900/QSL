@@ -11,7 +11,7 @@ import sys
 from setuptools import setup
 
 __author__ = "Fred C. (W6BSD)"
-__version__ = "0.1.10"
+__version__ = "0.1.11"
 __license__ = 'BSD-3'
 
 py_version = sys.version_info[:2]
