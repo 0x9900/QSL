@@ -138,7 +138,7 @@ def card(qso, signature, image_name=None):
                                    f'RST Send: {qso.RST_SENT} • RST Recieved: {qso.RST_RCVD}'
                                   ), font=font_text, fill=TEXT_COLOR)
   textbox.text((x_pos, y_pos+80), f'Date: {date}', font=font_text, fill=TEXT_COLOR)
-  textbox.text((x_pos, y_pos+105), f' Rig: {qso.MY_RIG} • Power: {int(qso.TX_PWR)} Watt',
+  textbox.text((x_pos, y_pos+105), f' Rig: {qso.MY_RIG} • Power: {int(qso.TX_PWR):d} Watt',
                font=font_text, fill=TEXT_COLOR)
   textbox.text((x_pos, y_pos+130), (f'Grid: {qso.MY_GRIDSQUARE} • CQ Zone: {config.ituzone} • '
                                     f'ITU Zone: {config.cqzone}'),
