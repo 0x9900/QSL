@@ -271,8 +271,12 @@ def main():
 
     image_name = card(qso, config.signature)
     if not opts.no_email:
-      send_mail(qso, image_name)
-      logging.info('Mail sent to %s at %s', qso['CALL'], qso['email'])
+      try:
+        send_mail(qso, image_name)
+      except smtplib.SMTPRecipientsRefused as err:
+        logging.warning('Error Recipient "%s" malformed', qso['email'])
+      else:
+        logging.info('Mail sent to %s at %s', qso['CALL'], qso['email'])
     if not opts.keep:
       os.unlink(image_name)
 
