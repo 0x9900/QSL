@@ -6,7 +6,9 @@
 # All rights reserved.
 #
 
+import dbm.gnu as dbm
 import logging
+import marshal
 import os
 import re
 import smtplib
@@ -223,6 +225,21 @@ def move_adif(adif_file):
     move(src, dest)
 
 
+def already_sent(qso):
+  key = (qso['CALL'] + '-' + qso['BAND']).upper()
+  try:
+    if os.path.exists(config.qsl_cache):
+      with dbm.open(config.qsl_cache, 'r') as qdb:
+        if key in qdb:
+          return True
+
+    with dbm.open(config.qsl_cache, 'c') as qdb:
+      qdb[key] = marshal.dumps(qso)
+  except (dbm.error, IOError) as err:
+    logging.warning(err)
+  return False
+
+
 def main():
   global config
   config = read_config()
@@ -230,13 +247,15 @@ def main():
   parser = ArgumentParser(description="Send e-QSL cards")
   parser.add_argument("-a", "--adif-file", default=config.adif_file,
                       type=FileType('r'), help='ADIF log file [default: %(default)s]')
+  parser.add_argument("-k", "--keep", action="store_true", default=False,
+                      help=('keep the ADIF and the images after sending the cards '
+                            '[Default: %(default)s]'))
   parser.add_argument("-n", "--no-email", action="store_true", default=False,
                       help='Do not send the mail, just generate the card only')
   parser.add_argument("-s", "--show", action="store_true", default=False,
                       help='Show the card')
-  parser.add_argument("-k", "--keep", action="store_true", default=False,
-                      help=('keep the ADIF and the images after sending the cards '
-                            '[Default: %(default)s]'))
+  parser.add_argument("-u", "--uniq", action="store_false", default=True,
+                      help="Never send a second QSL")
   opts = parser.parse_args()
 
   config.show_cards = True if opts.show else False
@@ -250,6 +269,10 @@ def main():
     return os.EX_IOERR
 
   for qso in qsos_raw:
+    if opts.uniq and already_sent(qso):
+      logging.warning('QSL already sent to %s', qso['CALL'])
+      continue
+
     user_info = get_user(qrz, qso['CALL'])
     if not hasattr(user_info, 'email') or not user_info.email:
       logging.warning('No email provided for %s', qso['CALL'])
@@ -257,7 +280,6 @@ def main():
 
     qso['email'] = user_info.email
     qso['country'] = user_info.country
-    qso['name'] = user_info.name
     qso['fname'] = user_info.fname.title() if user_info.fname else 'Dear OM'
 
     if 'RST_SENT' not in qso:
