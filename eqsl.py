@@ -259,8 +259,12 @@ def main():
   opts = parser.parse_args()
 
   config.show_cards = True if opts.show else False
-  qrz = qrzlib.QRZ()
-  qrz.authenticate(config.call, config.qrz_key)
+  try:
+    qrz = qrzlib.QRZ()
+    qrz.authenticate(config.call, config.qrz_key)
+  except OSError as err:
+    logging.error(err)
+    return os.EX_IOERR
 
   try:
     qsos_raw, _ = adif_io.read_from_string(opts.adif_file.read())
