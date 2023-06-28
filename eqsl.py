@@ -147,7 +147,7 @@ def card(qso, signature, image_name=None):
 
   textbox.text((x_pos, y_pos+155), signature, font=font_foot, fill=config.text_color)
 
-  textbox.text((NEW_WIDTH-90, vsize-30), '@0x9900', font=font_foot, fill=(0xff, 0xff, 0xff))
+  textbox.text((NEW_WIDTH-90, vsize-30), '@0x9900', font=font_foot, fill=(0x70, 0x70, 0xa0))
 
   img = Image.alpha_composite(img, overlay)
   img = img.convert("RGB")
