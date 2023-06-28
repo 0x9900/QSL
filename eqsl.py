@@ -36,11 +36,10 @@ from importlib.resources import files
 
 import qrzlib
 
-TEXT_COLOR = (0, 0, 77)
 NEW_WIDTH = 1024
 
 CONFIG_FILENAME = "eqsl.yaml"
-CONFIG_LOCATIONS = ['/etc', '~/.local', '.']
+CONFIG_LOCATIONS = ['.', '~/.local', '/etc']
 
 FONTS = {
   'font_call': 'Ubuntu Mono derivative Powerline Bold.ttf',
@@ -117,7 +116,7 @@ def card(qso, signature, image_name=None):
     logging.error("The card resolution should be at least 1024x576")
     sys.exit(10)
 
-  font_call = ImageFont.truetype(config.font_call, 32)
+  font_call = ImageFont.truetype(config.font_call, 24)
   font_text = ImageFont.truetype(config.font_text, 16)
   font_foot = ImageFont.truetype(config.font_foot, 14)
 
@@ -128,25 +127,25 @@ def card(qso, signature, image_name=None):
 
   overlay = Image.new('RGBA', img.size)
   draw = ImageDraw.Draw(overlay)
-  draw_rectangle(draw, ((112, vsize-220), (912, vsize-20)), width=3)
+  draw_rectangle(draw, ((112, vsize-220), (912, vsize-20)), width=3, fill=config.overlay_color)
 
   textbox = ImageDraw.Draw(overlay)
   date = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X UTC")
-  y_pos = vsize - 215
+  y_pos = vsize - 205
   x_pos = 132
-  textbox.text((x_pos, y_pos), f"From: {qso.OPERATOR}  To: {qso.CALL}",
-               font=font_call, fill=TEXT_COLOR)
-  textbox.text((x_pos, y_pos+55), (f'Mode: {qso.MODE} • Band: {qso.BAND} • '
+  textbox.text((x_pos+10, y_pos), f"To: {qso.CALL}  From: {qso.OPERATOR}",
+               font=font_call, fill=config.text_color)
+  textbox.text((x_pos, y_pos+40), (f'Mode: {qso.MODE} • Band: {qso.BAND} • '
                                    f'RST Send: {qso.RST_SENT} • RST Recieved: {qso.RST_RCVD}'
-                                  ), font=font_text, fill=TEXT_COLOR)
-  textbox.text((x_pos, y_pos+80), f'Date: {date}', font=font_text, fill=TEXT_COLOR)
-  textbox.text((x_pos, y_pos+105), f' Rig: {qso.MY_RIG} • Power: {int(qso.TX_PWR):d} Watt',
-               font=font_text, fill=TEXT_COLOR)
-  textbox.text((x_pos, y_pos+130), (f'Grid: {qso.MY_GRIDSQUARE} • CQ Zone: {config.ituzone} • '
+                                  ), font=font_text, fill=config.text_color)
+  textbox.text((x_pos, y_pos+65), f'Date: {date}', font=font_text, fill=config.text_color)
+  textbox.text((x_pos, y_pos+90), f' Rig: {qso.MY_RIG} • Power: {int(qso.TX_PWR):d} Watt',
+               font=font_text, fill=config.text_color)
+  textbox.text((x_pos, y_pos+115), (f'Grid: {qso.MY_GRIDSQUARE} • CQ Zone: {config.ituzone} • '
                                     f'ITU Zone: {config.cqzone}'),
-               font=font_text, fill=TEXT_COLOR)
+               font=font_text, fill=config.text_color)
 
-  textbox.text((x_pos, y_pos+165), signature, font=font_foot, fill=TEXT_COLOR)
+  textbox.text((x_pos, y_pos+155), signature, font=font_foot, fill=config.text_color)
 
   textbox.text((NEW_WIDTH-90, vsize-30), '@0x9900', font=font_foot, fill=(0xff, 0xff, 0xff))
 
@@ -195,6 +194,9 @@ def read_config():
       logging.warning('Font "%s" not found, using the default font', font_path)
       font_path = os.path.join(os.path.dirname(__file__), 'fonts', FONTS[font_name])
       config[font_name] = font_path
+
+  for color_name in ('overlay_color', 'text_color'):
+    config[color_name] = tuple(config[color_name])
 
   card_path = config.get('qsl_card', '')
   if not os.path.isfile(card_path):
