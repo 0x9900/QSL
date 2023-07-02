@@ -34,6 +34,8 @@ import adif_io
 import qrzlib
 import yaml
 
+__version__ = "0.1.17"
+
 NEW_WIDTH = 1024
 
 CONFIG_FILENAME = "eqsl.yaml"
@@ -260,8 +262,6 @@ class QRZInfo:
     qso['EMAIL'] = self._qrz.email
     qso['NAME'] = self._qrz.fname.title()
     qso['NAME'] = qso['NAME'].strip()
-    if not qso['NAME']:
-      qso['NAME'] = 'Dear OM'
 
     return True
 
@@ -281,6 +281,8 @@ def main():
                       help='Show the card')
   parser.add_argument("-u", "--uniq", action="store_false", default=True,
                       help="Never send a second QSL")
+  parser.add_argument("--version", action="version", version=f'%(prog)s {__version__}')
+
   opts = parser.parse_args()
 
   config.show_cards = bool(opts.show)
@@ -305,6 +307,11 @@ def main():
       qso['RST_SENT'] = '59'
     if 'RST_RCVD' not in qso:
       qso['RST_RCVD'] = '59'
+
+    if not qso['NAME']:
+      qso['NAME'] = 'Dear OM'
+    else:
+      qso['NAME'] = qso['NAME'].split()[0]
 
     qso_date = qso.get('QSO_DATE_OFF', qso['QSO_DATE'])
     qso_time = qso.get('TIME_OFF', qso.get('TIME_ON', '0000'))
