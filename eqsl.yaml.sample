@@ -29,7 +29,7 @@ signature: Thank you for the QSO, and I will look forward for our next contact, 
 
 mail_template: |
 
-  Hello $fname, and thank you for our QSO!
+  Hello $name, and thank you for our QSO!
 
   Frequency.: $freq_rx MHz
   Band......: $band

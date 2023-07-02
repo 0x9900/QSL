@@ -5,18 +5,17 @@
 # Copyright (c) 2023, Fred W6BSD
 # All rights reserved.
 #
+# pylint: disable=no-member,invalid-name,too-many-branches
+#
 
 import dbm.gnu as dbm
 import logging
 import marshal
 import os
-import re
 import smtplib
-import sqlite3
 import ssl
 import string
 import sys
-import yaml
 
 from argparse import ArgumentParser, FileType
 from datetime import datetime
@@ -27,14 +26,13 @@ from email.utils import formatdate
 from shutil import move
 from tempfile import NamedTemporaryFile
 
-import adif_io
-
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
-from importlib.resources import files
 
+import adif_io
 import qrzlib
+import yaml
 
 NEW_WIDTH = 1024
 
@@ -46,6 +44,8 @@ FONTS = {
   'font_text': 'DroidSansMono.ttf',
   'font_foot': 'VeraMono-Italic.ttf',
 }
+
+config = None
 
 logging.basicConfig(level=logging.INFO)
 
@@ -60,19 +60,19 @@ def send_mail(qso, image):
   mail_template = config.mail_template + '\n' * 3
   template = string.Template(mail_template).safe_substitute
 
-  if not qso.email:
+  if not qso.EMAIL:
     logging.error('No email provided for %s', qso.CALL)
     return
 
   msg = MIMEMultipart()
   msg['From'] = config.smtp_from
-  msg['To'] = qso.email
+  msg['To'] = qso.EMAIL
   msg['Date'] = formatdate(localtime=True)
   msg['Subject'] = f"Digital QSL from {qso.OPERATOR} to {qso.CALL}"
 
   data = {}
   data['call'] = qso.CALL
-  data['fname'] = qso.fname
+  data['name'] = qso.NAME
   data['qso_date'] = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X UTC")
   data['freq_rx'] = qso.FREQ_RX
   data['mode'] = qso.MODE
@@ -84,13 +84,14 @@ def send_mail(qso, image):
 
   msg.attach(MIMEText(template(data)))
 
-  with open(image, "rb") as fd:
-    part = MIMEApplication(fd.read(), Name=os.path.basename(image))
+  with open(image, "rb") as fdi:
+    part = MIMEApplication(fdi.read(), Name=os.path.basename(image))
     part['Content-Disposition'] = 'attachment; filename="%s"' % os.path.basename(image)
     msg.attach(part)
 
-  smtp_password = open(os.path.expanduser('~/.smtp')).read()
-  smtp_password = smtp_password.strip()
+  with open(os.path.expanduser('~/.smtp'), encoding='utf-8') as fdp:
+    smtp_password = fdp.read()
+    smtp_password = smtp_password.strip()
 
   #context = ssl.create_default_context()
   context = ssl._create_unverified_context()
@@ -99,7 +100,7 @@ def send_mail(qso, image):
     with smtplib.SMTP(config.smtp_server, config.smtp_port) as server:
       server.starttls(context=context)
       server.login(config.smtp_login, config.smtp_password)
-      server.sendmail(config.smtp_from, qso.email, msg.as_string())
+      server.sendmail(config.smtp_from, qso.EMAIL, msg.as_string())
   except ConnectionRefusedError as err:
     logging.error('SMTP "%s" connection error %s', config.smtp_server, err)
     sys.exit(1)
@@ -172,8 +173,7 @@ def _read_config():
       logging.debug('Reading config file: %s', filename)
       try:
         with open(filename, 'r', encoding='utf-8') as cfd:
-          config = yaml.safe_load(cfd)
-          return config
+          return yaml.safe_load(cfd)
       except ValueError as err:
         logging.error('Configuration error "%s"', err)
         break
@@ -187,24 +187,24 @@ def _read_config():
 
 
 def read_config():
-  config = _read_config()
+  _config = _read_config()
   for font_name in ("font_call", "font_text", "font_foot"):
-    font_path = config.get(font_name, '')
+    font_path = _config.get(font_name, '')
     if not os.path.isfile(font_path):
       logging.warning('Font "%s" not found, using the default font', font_path)
       font_path = os.path.join(os.path.dirname(__file__), 'fonts', FONTS[font_name])
-      config[font_name] = font_path
+      _config[font_name] = font_path
 
   for color_name in ('overlay_color', 'text_color'):
-    config[color_name] = tuple(config[color_name])
+    _config[color_name] = tuple(_config[color_name])
 
-  card_path = config.get('qsl_card', '')
+  card_path = _config.get('qsl_card', '')
   if not os.path.isfile(card_path):
     logging.warning('QSL Card "%s" not found, using the default QSL Card', card_path)
     card_path = os.path.join(os.path.dirname(__file__), 'card', 'default.jpg')
-    config['qsl_card'] = card_path
+    _config['qsl_card'] = card_path
 
-  return type('Config', (object, ), config)
+  return type('Config', (object, ), _config)
 
 
 def get_user(qrz, call):
@@ -260,7 +260,7 @@ def main():
                       help="Never send a second QSL")
   opts = parser.parse_args()
 
-  config.show_cards = True if opts.show else False
+  config.show_cards = bool(opts.show)
   try:
     qrz = qrzlib.QRZ()
     qrz.authenticate(config.call, config.qrz_key)
@@ -270,7 +270,7 @@ def main():
 
   try:
     qsos_raw, _ = adif_io.read_from_string(opts.adif_file.read())
-  except IndexError as err:
+  except IndexError:
     logging.error('Error reading the ADIF file "%s"', opts.adif_file.name)
     return os.EX_IOERR
 
@@ -279,14 +279,16 @@ def main():
       logging.warning('QSL already sent to %s', qso['CALL'])
       continue
 
-    user_info = get_user(qrz, qso['CALL'])
-    if not hasattr(user_info, 'email') or not user_info.email:
-      logging.warning('No email provided for %s', qso['CALL'])
-      continue
+    if 'EMAIL' not in qso or not qso['EMAIL']:
+      user_info = get_user(qrz, qso['CALL'])
+      if not hasattr(user_info, 'email') or not user_info.email:
+        logging.warning('No email provided for %s', qso['CALL'])
+        continue
+      qso['EMAIL'] = user_info.email
 
-    qso['email'] = user_info.email
-    qso['country'] = user_info.country
-    qso['fname'] = user_info.fname.title() if user_info.fname else 'Dear OM'
+    if 'NAME' not in qso and not qso['NAME']:
+      user_info = get_user(qrz, qso['CALL'])
+      qso['NAME'] = user_info.fname.title() if user_info.fname else 'Dear OM'
 
     if 'RST_SENT' not in qso:
       qso['RST_SENT'] = '59'
@@ -301,16 +303,19 @@ def main():
     if not opts.no_email:
       try:
         send_mail(qso, image_name)
-      except smtplib.SMTPRecipientsRefused as err:
-        logging.warning('Error Recipient "%s" malformed', qso['email'])
+      except smtplib.SMTPRecipientsRefused:
+        logging.warning('Error Recipient "%s" malformed', qso['EMAIL'])
       else:
-        logging.info('Mail sent to %s at %s', qso['CALL'], qso['email'])
+        logging.info('Mail sent to %s at %s', qso['CALL'], qso['EMAIL'])
     if not opts.keep:
       os.unlink(image_name)
 
   opts.adif_file.close()
   if not opts.keep:
     move_adif(opts.adif_file)
+
+  return os.EX_OK
+
 
 if __name__ == "__main__":
   main()
