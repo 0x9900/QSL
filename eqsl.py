@@ -207,15 +207,6 @@ def read_config():
   return type('Config', (object, ), _config)
 
 
-def get_user(qrz, call):
-  try:
-    qrz.get_call(call)
-  except qrzlib.QRZ.NotFound:
-    logging.error("%s not found on qrz.com", call)
-    return None
-  return qrz
-
-
 def move_adif(adif_file):
   src = adif_file.name
   dest, _ = os.path.splitext(src)
@@ -241,6 +232,38 @@ def already_sent(qso):
     logging.warning(err)
   return False
 
+class QRZInfo:
+  def __init__(self):
+    self._qrz = None
+
+  def _connect(self):
+    try:
+      self._qrz = qrzlib.QRZ()
+      self._qrz.authenticate(config.call, config.qrz_key)
+    except OSError as err:
+      logging.error(err)
+      return os.EX_IOERR
+
+  def get_user(self, qso):
+    if not self._qrz:
+      self._connect()
+    try:
+      self._qrz.get_call(qso['CALL'])
+    except qrzlib.QRZ.NotFound:
+      logging.error("%s not found on qrz.com", call)
+      return False
+
+    if not getattr(self._qrz, 'email') or not self._qrz.email:
+      logging.error("No email provided for %s on qrz.com", qso['CALL'])
+      return False
+
+    qso['EMAIL'] = self._qrz.email
+    qso['NAME'] = self._qrz.fname.title()
+    qso['NAME'] = qso['NAME'].strip()
+    if not qso['NAME']:
+      qso['NAME'] = 'Dear OM'
+
+    return True
 
 def main():
   global config
@@ -261,12 +284,7 @@ def main():
   opts = parser.parse_args()
 
   config.show_cards = bool(opts.show)
-  try:
-    qrz = qrzlib.QRZ()
-    qrz.authenticate(config.call, config.qrz_key)
-  except OSError as err:
-    logging.error(err)
-    return os.EX_IOERR
+  qrz = QRZInfo()
 
   try:
     qsos_raw, _ = adif_io.read_from_string(opts.adif_file.read())
@@ -280,15 +298,8 @@ def main():
       continue
 
     if 'EMAIL' not in qso or not qso['EMAIL']:
-      user_info = get_user(qrz, qso['CALL'])
-      if not hasattr(user_info, 'email') or not user_info.email:
-        logging.warning('No email provided for %s', qso['CALL'])
+      if not qrz.get_user(qso):
         continue
-      qso['EMAIL'] = user_info.email
-
-    if 'NAME' not in qso and not qso['NAME']:
-      user_info = get_user(qrz, qso['CALL'])
-      qso['NAME'] = user_info.fname.title() if user_info.fname else 'Dear OM'
 
     if 'RST_SENT' not in qso:
       qso['RST_SENT'] = '59'
