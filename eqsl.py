@@ -34,7 +34,7 @@ import adif_io
 import qrzlib
 import yaml
 
-__version__ = "0.1.17"
+__version__ = "0.1.18"
 
 NEW_WIDTH = 1024
 
@@ -252,7 +252,7 @@ class QRZInfo:
     try:
       self._qrz.get_call(qso['CALL'])
     except qrzlib.QRZ.NotFound:
-      logging.error("%s not found on qrz.com", call)
+      logging.error("%s not found on qrz.com", qso['CALL'])
       return False
 
     if not getattr(self._qrz, 'email') or not self._qrz.email:
