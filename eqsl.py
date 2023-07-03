@@ -12,6 +12,7 @@ import dbm.gnu as dbm
 import logging
 import marshal
 import os
+import re
 import smtplib
 import ssl
 import string
@@ -34,7 +35,10 @@ import adif_io
 import qrzlib
 import yaml
 
-__version__ = "0.1.18"
+__version__ = "0.1.19"
+
+# US special call sign station don't like to receive e-cards
+RE_US_SPECIAL = re.compile('[KNW]\d\w')
 
 NEW_WIDTH = 1024
 
@@ -295,6 +299,10 @@ def main():
     return os.EX_IOERR
 
   for qso in qsos_raw:
+    if RE_US_SPECIAL.fullmatch(qso['CALL']):
+      logging.warning('Skip special event station (%s)', qso['CALL'])
+      continue
+
     if opts.uniq and already_sent(qso):
       logging.warning('QSL already sent to %s', qso['CALL'])
       continue
