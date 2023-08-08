@@ -35,7 +35,7 @@ import adif_io
 import qrzlib
 import yaml
 
-__version__ = "0.1.19"
+__version__ = "0.1.21"
 
 # US special call sign station don't like to receive e-cards
 RE_US_SPECIAL = re.compile('[KNW]\d\w')
@@ -50,6 +50,8 @@ FONTS = {
   'font_text': 'DroidSansMono.ttf',
   'font_foot': 'VeraMono-Italic.ttf',
 }
+
+CACHE_EXPIRE = 86400 * 8
 
 config = None
 
@@ -229,14 +231,19 @@ def already_sent(qso):
   try:
     if os.path.exists(config.qsl_cache):
       with dbm.open(config.qsl_cache, 'r') as qdb:
-        if key in qdb:
-          return True
+        try:
+          cached = marshal.loads(qdb[key])
+          if cached.get('timestamp', 0) > datetime.utcnow().timestamp() - CACHE_EXPIRE:
+            return True
+        except KeyError:
+          pass
 
     with dbm.open(config.qsl_cache, 'c') as qdb:
       qdb[key] = marshal.dumps(qso)
   except (dbm.error, IOError) as err:
     logging.warning(err)
   return False
+
 
 class QRZInfo:
   def __init__(self):
@@ -303,11 +310,16 @@ def main():
       logging.warning('Skip special event station (%s)', qso['CALL'])
       continue
 
+    qso_date = qso.get('QSO_DATE_OFF', qso['QSO_DATE'])
+    qso_time = qso.get('TIME_OFF', qso.get('TIME_ON', '0000'))
+    qso['timestamp'] = qso_timestamp(qso_date, qso_time)
+
     if opts.uniq and already_sent(qso):
       logging.warning('QSL already sent to %s', qso['CALL'])
       continue
 
     if 'EMAIL' not in qso or not qso['EMAIL']:
+      logging.warning('qrz look up for %s', qso['CALL'])
       if not qrz.get_user(qso):
         continue
 
@@ -321,9 +333,8 @@ def main():
     else:
       qso['NAME'] = qso['NAME'].split()[0]
 
-    qso_date = qso.get('QSO_DATE_OFF', qso['QSO_DATE'])
-    qso_time = qso.get('TIME_OFF', qso.get('TIME_ON', '0000'))
-    qso['timestamp'] = qso_timestamp(qso_date, qso_time)
+    if 'SUBMODE' in qso:
+      qso['MODE'] = qso['SUBMODE']
 
     image_name = card(qso, config.signature)
     if not opts.no_email:
