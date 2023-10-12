@@ -38,7 +38,7 @@ import yaml
 __version__ = "0.1.21"
 
 # US special call sign station don't like to receive e-cards
-RE_US_SPECIAL = re.compile('[KNW]\d\w')
+RE_US_SPECIAL = re.compile(r'[KNW]\d\w')
 
 NEW_WIDTH = 1024
 
@@ -94,7 +94,7 @@ def send_mail(qso, image):
 
   with open(image, "rb") as fdi:
     part = MIMEApplication(fdi.read(), Name=os.path.basename(image))
-    part['Content-Disposition'] = 'attachment; filename="%s"' % os.path.basename(image)
+    part['Content-Disposition'] = f'attachment; filename="{os.path.basename(image)}"'
     msg.attach(part)
 
   with open(os.path.expanduser('~/.smtp'), encoding='utf-8') as fdp:
