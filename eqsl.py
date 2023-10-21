@@ -35,7 +35,7 @@ import adif_io
 import qrzlib
 import yaml
 
-__version__ = "0.1.22"
+__version__ = "0.2.0"
 
 # US special call sign station don't like to receive e-cards
 RE_US_SPECIAL = re.compile(r'[KNW]\d\w')
@@ -62,17 +62,19 @@ def draw_rectangle(draw, coord, color=(0x44, 0x79, 0x9), width=1, fill=(0x75, 0x
   draw.rectangle(coord, outline=color, width=width)
 
 def get_template(qso):
-  country = qso.COUNTRY.lower()
+  # there is only one email template
   if hasattr(config, 'mail_template'):
     return string.Template(config.mail_template + '\n' * 3).safe_substitute
-  elif not hasattr(config, 'mail_templates'):
-    raise KeyError('Not mail template found')
+  if not hasattr(config, 'mail_templates') or not hasattr(config, 'languages'):
+    raise KeyError('Not mail template or language found')
 
-  templates = config.mail_templates
-  try:
-    template = templates.get(country, templates['default'])
-  except KeyError:
-    raise KeyError('The mail template "default" not found.')
+  languages = {v.lower(): k.lower() for k, values in config.languages.items() for v in values}
+  country = qso.COUNTRY.lower()
+
+  lang = languages.get(country, 'default')
+  if lang != 'default':
+    logging.info('Using %s template for %s', lang, country)
+  template = config.mail_templates.get(lang, "default")
   return string.Template(template + '\n' * 3).safe_substitute
 
 
