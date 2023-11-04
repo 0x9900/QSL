@@ -35,7 +35,7 @@ import adif_io
 import qrzlib
 import yaml
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 # US special call sign station don't like to receive e-cards
 RE_US_SPECIAL = re.compile(r'[KNW]\d\w')
@@ -55,7 +55,10 @@ CACHE_EXPIRE = 86400 * 8
 
 config = None
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+  format="%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s",
+  level=logging.INFO
+)
 
 def draw_rectangle(draw, coord, color=(0x44, 0x79, 0x9), width=1, fill=(0x75, 0xDB, 0xCD, 190)):
   draw.rectangle(coord, outline=color, fill=fill)
@@ -151,11 +154,11 @@ def card(qso, signature, image_name=None):
 
   overlay = Image.new('RGBA', img.size)
   draw = ImageDraw.Draw(overlay)
-  draw_rectangle(draw, ((112, vsize-220), (912, vsize-20)), width=3, fill=config.overlay_color)
+  draw_rectangle(draw, ((112, vsize-230), (912, vsize-20)), width=3, fill=config.overlay_color)
 
   textbox = ImageDraw.Draw(overlay)
   date = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X UTC")
-  y_pos = vsize - 205
+  y_pos = vsize - 220
   x_pos = 132
   textbox.text((x_pos+10, y_pos), f"To: {qso.CALL}  From: {qso.OPERATOR}",
                font=font_call, fill=config.text_color)
@@ -168,8 +171,11 @@ def card(qso, signature, image_name=None):
   textbox.text((x_pos, y_pos+115), (f'Grid: {qso.MY_GRIDSQUARE} • CQ Zone: {config.ituzone} • '
                                     f'ITU Zone: {config.cqzone}'),
                font=font_text, fill=config.text_color)
+  if hasattr(qso, 'SOTA_REF'):
+    textbox.text((x_pos, y_pos+140), f'Sota: Summit Reference ({qso.SOTA_REF})',
+                font=font_text, fill=config.text_color)
 
-  textbox.text((x_pos, y_pos+155), signature, font=font_foot, fill=config.text_color)
+  textbox.text((x_pos, y_pos+165), signature, font=font_foot, fill=config.text_color)
 
   textbox.text((NEW_WIDTH-90, vsize-30), '@0x9900', font=font_foot, fill=(0x70, 0x70, 0xa0))
 
