@@ -17,7 +17,6 @@ import smtplib
 import ssl
 import string
 import sys
-
 from argparse import ArgumentParser, FileType
 from datetime import datetime
 from email.mime.application import MIMEApplication
@@ -27,13 +26,10 @@ from email.utils import formatdate
 from shutil import move
 from tempfile import NamedTemporaryFile
 
-from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
-
 import adif_io
 import qrzlib
 import yaml
+from PIL import Image, ImageDraw, ImageFont
 
 __version__ = "0.2.1"
 
