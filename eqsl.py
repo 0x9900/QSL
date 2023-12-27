@@ -31,7 +31,7 @@ import qrzlib
 import yaml
 from PIL import Image, ImageDraw, ImageFont
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 # US special call sign station don't like to receive e-cards
 RE_US_SPECIAL = re.compile(r'[KNW]\d\w')
