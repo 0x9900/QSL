@@ -159,7 +159,7 @@ def card(qso, signature, image_name=None):
   textbox.text((x_pos+10, y_pos), f"To: {qso.CALL}  From: {qso.OPERATOR}",
                font=font_call, fill=config.text_color)
   textbox.text((x_pos, y_pos+40), (f'Mode: {qso.MODE} • Band: {qso.BAND} • '
-                                   f'RST Send: {qso.RST_SENT} • RST Recieved: {qso.RST_RCVD}'
+                                   f'RST Send: {qso.RST_SENT} • RST Received: {qso.RST_RCVD}'
                                   ), font=font_text, fill=config.text_color)
   textbox.text((x_pos, y_pos+65), f'Date: {date}', font=font_text, fill=config.text_color)
   textbox.text((x_pos, y_pos+90), f' Rig: {qso.MY_RIG} • Power: {int(qso.TX_PWR):d} Watt',
