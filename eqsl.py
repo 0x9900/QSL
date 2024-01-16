@@ -8,7 +8,7 @@
 # pylint: disable=no-member,invalid-name,too-many-branches
 #
 
-import dbm.gnu as dbm
+import dbm
 import logging
 import marshal
 import os
@@ -31,7 +31,7 @@ import qrzlib
 import yaml
 from PIL import Image, ImageDraw, ImageFont
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 # US special call sign station don't like to receive e-cards
 RE_US_SPECIAL = re.compile(r'[KNW]\d\w')
