@@ -5,7 +5,7 @@
 # Copyright (c) 2023, Fred W6BSD
 # All rights reserved.
 #
-# pylint: disable=no-member,invalid-name,too-many-branches
+# pylint: disable=no-member,invalid-name,too-many-branches,consider-using-with
 #
 
 import dbm
@@ -16,7 +16,6 @@ import re
 import smtplib
 import ssl
 import string
-import sys
 from argparse import ArgumentParser, FileType
 from datetime import datetime
 from email.mime.application import MIMEApplication
@@ -31,7 +30,7 @@ import qrzlib
 import yaml
 from PIL import Image, ImageDraw, ImageFont
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 # US special call sign station don't like to receive e-cards
 RE_US_SPECIAL = re.compile(r'[KNW]\d\w')
@@ -56,9 +55,11 @@ logging.basicConfig(
   level=logging.INFO
 )
 
+
 def draw_rectangle(draw, coord, color=(0x44, 0x79, 0x9), width=1, fill=(0x75, 0xDB, 0xCD, 190)):
   draw.rectangle(coord, outline=color, fill=fill)
   draw.rectangle(coord, outline=color, width=width)
+
 
 def get_template(qso):
   # there is only one email template
@@ -78,7 +79,6 @@ def get_template(qso):
 
 
 def send_mail(qso, image):
-  server = "127.0.0.1"
   qso = type('QSO', (object,), qso)
   template = get_template(qso)
 
@@ -111,23 +111,21 @@ def send_mail(qso, image):
     part['Content-Disposition'] = f'attachment; filename="{os.path.basename(image)}"'
     msg.attach(part)
 
-  with open(os.path.expanduser('~/.smtp'), encoding='utf-8') as fdp:
-    smtp_password = fdp.read()
-    smtp_password = smtp_password.strip()
-
-  #context = ssl.create_default_context()
-  context = ssl._create_unverified_context()
-
+  context = ssl.create_default_context()
   try:
     with smtplib.SMTP(config.smtp_server, config.smtp_port) as server:
+      server.ehlo()
       server.starttls(context=context)
+      server.ehlo()
       server.login(config.smtp_login, config.smtp_password)
       server.sendmail(config.smtp_from, qso.EMAIL, msg.as_string())
-  except ConnectionRefusedError as err:
+  except (ConnectionRefusedError, smtplib.SMTPAuthenticationError) as err:
     logging.error('SMTP "%s" connection error %s', config.smtp_server, err)
-    sys.exit(1)
+    raise SystemExit("Exit with error") from None
+
 
 def card(qso, signature, image_name=None):
+  # pylint: disable=too-many-locals
   width = NEW_WIDTH
   qso = type('QSO', (object,), qso)
 
@@ -137,7 +135,7 @@ def card(qso, signature, image_name=None):
 
   if img.size[0] < NEW_WIDTH and img.size < 576:
     logging.error("The card resolution should be at least 1024x576")
-    sys.exit(10)
+    raise SystemExit("Exit with error")
 
   font_call = ImageFont.truetype(config.font_call, 24)
   font_text = ImageFont.truetype(config.font_text, 16)
@@ -158,9 +156,9 @@ def card(qso, signature, image_name=None):
   x_pos = 132
   textbox.text((x_pos+10, y_pos), f"To: {qso.CALL}  From: {qso.OPERATOR}",
                font=font_call, fill=config.text_color)
-  textbox.text((x_pos, y_pos+40), (f'Mode: {qso.MODE} • Band: {qso.BAND} • '
-                                   f'RST Send: {qso.RST_SENT} • RST Received: {qso.RST_RCVD}'
-                                  ), font=font_text, fill=config.text_color)
+  textstr = (f'Mode: {qso.MODE} • Band: {qso.BAND} • RST Send: {qso.RST_SENT} •'
+             ' RST Received: {qso.RST_RCVD}')
+  textbox.text((x_pos, y_pos+40), textstr, font=font_text, fill=config.text_color)
   textbox.text((x_pos, y_pos+65), f'Date: {date}', font=font_text, fill=config.text_color)
   textbox.text((x_pos, y_pos+90), f' Rig: {qso.MY_RIG} • Power: {int(qso.TX_PWR):d} Watt',
                font=font_text, fill=config.text_color)
@@ -169,7 +167,7 @@ def card(qso, signature, image_name=None):
                font=font_text, fill=config.text_color)
   if hasattr(qso, 'SOTA_REF'):
     textbox.text((x_pos, y_pos+140), f'Sota: Summit Reference ({qso.SOTA_REF})',
-                font=font_text, fill=config.text_color)
+                 font=font_text, fill=config.text_color)
 
   textbox.text((x_pos, y_pos+165), signature, font=font_foot, fill=config.text_color)
 
@@ -208,7 +206,7 @@ def _read_config():
 
   logging.error('No configuration file found.')
   logging.error(' >> Go to https://github.com/0x9900/QSL/ for a configuration example')
-  sys.exit(10)
+  raise SystemExit("Exit with error")
 
 
 def read_config():
@@ -263,6 +261,7 @@ def already_sent(qso):
 
 
 class QRZInfo:
+  # pylint: disable=too-few-public-methods
   def __init__(self):
     self._qrz = None
 
@@ -272,7 +271,7 @@ class QRZInfo:
       self._qrz.authenticate(config.call, config.qrz_key)
     except OSError as err:
       logging.error(err)
-      return os.EX_IOERR
+      raise SystemExit("Exit with error") from None
 
   def get_user(self, qso):
     if not self._qrz:
@@ -293,10 +292,8 @@ class QRZInfo:
 
     return True
 
-def main():
-  global config
-  config = read_config()
 
+def parse_args():
   parser = ArgumentParser(description="Send e-QSL cards")
   parser.add_argument("-a", "--adif-file", default=config.adif_file,
                       type=FileType('r'), help='ADIF log file [default: %(default)s]')
@@ -311,7 +308,13 @@ def main():
                       help="Never send a second QSL")
   parser.add_argument("--version", action="version", version=f'%(prog)s {__version__}')
 
-  opts = parser.parse_args()
+  return parser.parse_args()
+
+
+def main():
+  global config  # pylint: disable=global-statement
+  config = read_config()
+  opts = parse_args()
 
   config.show_cards = bool(opts.show)
   qrz = QRZInfo()
@@ -320,7 +323,7 @@ def main():
     qsos_raw, _ = adif_io.read_from_string(opts.adif_file.read())
   except IndexError:
     logging.error('Error reading the ADIF file "%s"', opts.adif_file.name)
-    return os.EX_IOERR
+    raise SystemExit("Exit with error") from None
 
   for qso in qsos_raw:
     if RE_US_SPECIAL.fullmatch(qso['CALL']):
@@ -367,8 +370,6 @@ def main():
   opts.adif_file.close()
   if not opts.keep:
     move_adif(opts.adif_file)
-
-  return os.EX_OK
 
 
 if __name__ == "__main__":
