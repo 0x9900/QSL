@@ -1,4 +1,3 @@
 PyYAML
-qrzlib
 adif_io
 pillow

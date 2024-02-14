@@ -41,7 +41,7 @@ def main():
     author=__author__,
     author_email='w6bsd@bsdworld.org',
     py_modules=['eqsl'],
-    install_requires=['Pillow', 'adif_io', 'qrzlib', 'PyYAML'],
+    install_requires=['Pillow', 'adif_io', 'PyYAML'],
     entry_points={
       'console_scripts': ['eqsl = eqsl:main'],
     },
