@@ -30,7 +30,7 @@ import adif_io
 import yaml
 from PIL import Image, ImageDraw, ImageFont
 
-__version__ = "0.2.6"
+__version__ = "0.2.7"
 
 NEW_WIDTH = 1024
 
