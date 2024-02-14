@@ -156,8 +156,8 @@ def card(qso, signature, image_name=None):
   x_pos = 132
   textbox.text((x_pos+10, y_pos), f"To: {qso.CALL}  From: {qso.OPERATOR}",
                font=font_call, fill=config.text_color)
-  textstr = (f'Mode: {qso.MODE} • Band: {qso.BAND} • RST Send: {qso.RST_SENT} •'
-             ' RST Received: {qso.RST_RCVD}')
+  textstr = (f'Mode: {qso.MODE} • Band: {qso.BAND} • RST Send: {qso.RST_SENT} • '
+             f'RST Received: {qso.RST_RCVD}')
   textbox.text((x_pos, y_pos+40), textstr, font=font_text, fill=config.text_color)
   textbox.text((x_pos, y_pos+65), f'Date: {date}', font=font_text, fill=config.text_color)
   textbox.text((x_pos, y_pos+90), f' Rig: {qso.MY_RIG} • Power: {int(qso.TX_PWR):d} Watt',
@@ -338,10 +338,9 @@ def main():
       logging.warning('QSL already sent to %s', qso['CALL'])
       continue
 
-    if 'EMAIL' not in qso or not qso['EMAIL']:
-      logging.warning('qrz look up for %s', qso['CALL'])
-      if not qrz.get_user(qso):
-        continue
+    logging.warning('qrz look up for %s', qso['CALL'])
+    if not qrz.get_user(qso):
+      continue
 
     if 'RST_SENT' not in qso:
       qso['RST_SENT'] = '59'
