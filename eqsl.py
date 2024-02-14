@@ -91,7 +91,6 @@ class QSOData:
     self.timestamp = qso_timestamp(date_on, time_on)
     self.name = qso['NAME'] if qso['NAME'] else 'Dear OM'
     self.email = qso['EMAIL']
-    self.email = 'fred@bsdhost.net'
     self.pota_ref = qso.get('POTA_REF')
     self.sota_ref = qso.get('SOTA_REF')
     self.lang = qso.get('COUNTRY', 'default').lower()
