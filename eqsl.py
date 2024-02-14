@@ -10,13 +10,14 @@
 
 import dbm
 import logging
-import marshal
 import os
-import re
+import pickle
 import smtplib
 import ssl
 import string
+import warnings
 from argparse import ArgumentParser, FileType
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
@@ -26,14 +27,10 @@ from shutil import move
 from tempfile import NamedTemporaryFile
 
 import adif_io
-import qrzlib
 import yaml
 from PIL import Image, ImageDraw, ImageFont
 
-__version__ = "0.2.4"
-
-# US special call sign station don't like to receive e-cards
-RE_US_SPECIAL = re.compile(r'[KNW]\d\w')
+__version__ = "0.2.6"
 
 NEW_WIDTH = 1024
 
@@ -55,6 +52,50 @@ logging.basicConfig(
   level=logging.INFO
 )
 
+warnings.filterwarnings('ignore')
+
+
+@dataclass
+class QSOData:
+  my_call: str
+  my_gridsquare: str
+  my_rig: str
+  call: str
+  frequency: float
+  band: str
+  mode: str
+  rst_sent: str
+  rst_rcvd: str
+  tx_pwr: int
+  timestamp: float
+  name: str
+  email: str
+  sota_ref: str
+  pota_ref: str
+  lang: str
+
+  def __init__(self, qso):
+    date_on = qso.get('QSO_DATE_OFF', qso['QSO_DATE'])
+    time_on = qso.get('TIME_OFF', qso.get('TIME_ON', '0000'))
+
+    self.my_call = qso['OPERATOR']
+    self.my_gridsquare = qso['MY_GRIDSQUARE']
+    self.my_rig = qso['MY_RIG']
+    self.call = qso['CALL']
+    self.frequency = float(qso['FREQ'])
+    self.band = qso['BAND']
+    self.mode = qso['MODE']
+    self.rst_sent = qso['RST_SENT']
+    self.rst_rcvd = qso['RST_RCVD']
+    self.tx_pwr = int(qso['TX_PWR'])
+    self.timestamp = qso_timestamp(date_on, time_on)
+    self.name = qso['NAME'] if qso['NAME'] else 'Dear OM'
+    self.email = qso['EMAIL']
+    self.email = 'fred@bsdhost.net'
+    self.pota_ref = qso.get('POTA_REF')
+    self.sota_ref = qso.get('SOTA_REF')
+    self.lang = qso.get('COUNTRY', 'default').lower()
+
 
 def draw_rectangle(draw, coord, color=(0x44, 0x79, 0x9), width=1, fill=(0x75, 0xDB, 0xCD, 190)):
   draw.rectangle(coord, outline=color, fill=fill)
@@ -69,40 +110,24 @@ def get_template(qso):
     raise KeyError('Not mail template or language found')
 
   languages = {v.lower(): k.lower() for k, values in config.languages.items() for v in values}
-  country = qso.COUNTRY.lower()
-
-  lang = languages.get(country, 'default')
+  lang = languages.get(qso.lang, 'default')
   if lang != 'default':
-    logging.info('Using %s template for %s', lang, country)
+    logging.info('Using %s template for %s', lang, qso.lang)
   template = config.mail_templates.get(lang, "default")
   return string.Template(template + '\n' * 3).safe_substitute
 
 
 def send_mail(qso, image):
-  qso = type('QSO', (object,), qso)
   template = get_template(qso)
-
-  if not qso.EMAIL:
-    logging.error('No email provided for %s', qso.CALL)
-    return
 
   msg = MIMEMultipart()
   msg['From'] = config.smtp_from
-  msg['To'] = qso.EMAIL
+  msg['To'] = qso.email
   msg['Date'] = formatdate(localtime=True)
-  msg['Subject'] = f"Digital QSL from {qso.OPERATOR} to {qso.CALL}"
+  msg['Subject'] = f"Digital QSL from {qso.my_call} to {qso.call}"
 
-  data = {}
-  data['call'] = qso.CALL
-  data['name'] = qso.NAME
+  data = asdict(qso)
   data['qso_date'] = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X UTC")
-  data['freq_rx'] = qso.FREQ_RX
-  data['mode'] = qso.MODE
-  data['band'] = qso.BAND_RX
-  data['rst_sent'] = qso.RST_SENT
-  data['rst_rcvd'] = qso.RST_RCVD
-  data['rig'] = qso.MY_RIG
-  data['gridsquare'] = qso.MY_GRIDSQUARE
 
   msg.attach(MIMEText(template(data)))
 
@@ -118,7 +143,7 @@ def send_mail(qso, image):
       server.starttls(context=context)
       server.ehlo()
       server.login(config.smtp_login, config.smtp_password)
-      server.sendmail(config.smtp_from, qso.EMAIL, msg.as_string())
+      server.sendmail(config.smtp_from, qso.email, msg.as_string())
   except (ConnectionRefusedError, smtplib.SMTPAuthenticationError) as err:
     logging.error('SMTP "%s" connection error %s', config.smtp_server, err)
     raise SystemExit("Exit with error") from None
@@ -127,7 +152,6 @@ def send_mail(qso, image):
 def card(qso, signature, image_name=None):
   # pylint: disable=too-many-locals
   width = NEW_WIDTH
-  qso = type('QSO', (object,), qso)
 
   img = Image.open(config.qsl_card)
   img = img.convert("RGBA")
@@ -154,19 +178,22 @@ def card(qso, signature, image_name=None):
   date = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X UTC")
   y_pos = vsize - 220
   x_pos = 132
-  textbox.text((x_pos+10, y_pos), f"To: {qso.CALL}  From: {qso.OPERATOR}",
+  textbox.text((x_pos+10, y_pos), f"To: {qso.call}  From: {qso.my_call}",
                font=font_call, fill=config.text_color)
-  textstr = (f'Mode: {qso.MODE} • Band: {qso.BAND} • RST Send: {qso.RST_SENT} • '
-             f'RST Received: {qso.RST_RCVD}')
+  textstr = (f'Mode: {qso.mode} • Band: {qso.band} • RST Send: {qso.rst_sent} • '
+             f'RST Received: {qso.rst_rcvd}')
   textbox.text((x_pos, y_pos+40), textstr, font=font_text, fill=config.text_color)
   textbox.text((x_pos, y_pos+65), f'Date: {date}', font=font_text, fill=config.text_color)
-  textbox.text((x_pos, y_pos+90), f' Rig: {qso.MY_RIG} • Power: {int(qso.TX_PWR):d} Watt',
+  textbox.text((x_pos, y_pos+90), f' Rig: {qso.my_rig} • Power: {int(qso.tx_pwr):d} Watt',
                font=font_text, fill=config.text_color)
-  textbox.text((x_pos, y_pos+115), (f'Grid: {qso.MY_GRIDSQUARE} • CQ Zone: {config.ituzone} • '
+  textbox.text((x_pos, y_pos+115), (f'Grid: {qso.my_gridsquare} • CQ Zone: {config.ituzone} • '
                                     f'ITU Zone: {config.cqzone}'),
                font=font_text, fill=config.text_color)
-  if hasattr(qso, 'SOTA_REF'):
-    textbox.text((x_pos, y_pos+140), f'Sota: Summit Reference ({qso.SOTA_REF})',
+  if qso.sota_ref:
+    textbox.text((x_pos, y_pos+140), f'SOTA: Summit Reference ({qso.sota_ref})',
+                 font=font_text, fill=config.text_color)
+  elif qso.pota_ref:
+    textbox.text((x_pos, y_pos+140), f'POTA: Park Reference ({qso.pota_ref})',
                  font=font_text, fill=config.text_color)
 
   textbox.text((x_pos, y_pos+165), signature, font=font_foot, fill=config.text_color)
@@ -242,55 +269,23 @@ def move_adif(adif_file):
 
 
 def already_sent(qso):
-  key = (qso['CALL'] + '-' + qso['BAND']).upper()
+  key = f'{qso.call}-{qso.band}-{qso.mode}'.upper()
   try:
-    if os.path.exists(config.qsl_cache):
-      with dbm.open(config.qsl_cache, 'r') as qdb:
-        try:
-          cached = marshal.loads(qdb[key])
-          if cached.get('timestamp', 0) > datetime.utcnow().timestamp() - CACHE_EXPIRE:
-            return True
-        except KeyError:
-          pass
+    with dbm.open(config.qsl_cache, 'r') as qdb:
+      cached = pickle.loads(qdb[key])
+    if cached.timestamp > datetime.utcnow().timestamp() - CACHE_EXPIRE:
+      return True
+  except dbm.error:
+    pass
+  except (KeyError, IOError):
+    pass
 
+  try:
     with dbm.open(config.qsl_cache, 'c') as qdb:
-      qdb[key] = marshal.dumps(qso)
-  except (dbm.error, IOError) as err:
+      qdb[key] = pickle.dumps(qso)
+  except IOError as err:
     logging.warning(err)
   return False
-
-
-class QRZInfo:
-  # pylint: disable=too-few-public-methods
-  def __init__(self):
-    self._qrz = None
-
-  def _connect(self):
-    try:
-      self._qrz = qrzlib.QRZ()
-      self._qrz.authenticate(config.call, config.qrz_key)
-    except OSError as err:
-      logging.error(err)
-      raise SystemExit("Exit with error") from None
-
-  def get_user(self, qso):
-    if not self._qrz:
-      self._connect()
-    try:
-      self._qrz.get_call(qso['CALL'])
-    except qrzlib.QRZ.NotFound:
-      logging.error("%s not found on qrz.com", qso['CALL'])
-      return False
-
-    if not getattr(self._qrz, 'email') or not self._qrz.email:
-      logging.error("No email provided for %s on qrz.com", qso['CALL'])
-      return False
-
-    qso['EMAIL'] = self._qrz.email
-    qso['NAME'] = self._qrz.fname.title()
-    qso['NAME'] = qso['NAME'].strip()
-
-    return True
 
 
 def parse_args():
@@ -317,7 +312,6 @@ def main():
   opts = parse_args()
 
   config.show_cards = bool(opts.show)
-  qrz = QRZInfo()
 
   try:
     qsos_raw, _ = adif_io.read_from_string(opts.adif_file.read())
@@ -325,44 +319,25 @@ def main():
     logging.error('Error reading the ADIF file "%s"', opts.adif_file.name)
     raise SystemExit("Exit with error") from None
 
-  for qso in qsos_raw:
-    if RE_US_SPECIAL.fullmatch(qso['CALL']):
-      logging.warning('Skip special event station (%s)', qso['CALL'])
-      continue
-
-    qso_date = qso.get('QSO_DATE_OFF', qso['QSO_DATE'])
-    qso_time = qso.get('TIME_OFF', qso.get('TIME_ON', '0000'))
-    qso['timestamp'] = qso_timestamp(qso_date, qso_time)
+  for _qso in qsos_raw:
+    try:
+      qso = QSOData(_qso)
+    except KeyError as err:
+      logging.error('The adif file is missing some information: %s', err)
 
     if opts.uniq and already_sent(qso):
-      logging.warning('QSL already sent to %s', qso['CALL'])
+      logging.warning('QSL already sent to %s', qso.call)
       continue
 
-    logging.warning('qrz look up for %s', qso['CALL'])
-    if not qrz.get_user(qso):
-      continue
-
-    if 'RST_SENT' not in qso:
-      qso['RST_SENT'] = '59'
-    if 'RST_RCVD' not in qso:
-      qso['RST_RCVD'] = '59'
-
-    if not qso['NAME']:
-      qso['NAME'] = 'Dear OM'
-    else:
-      qso['NAME'] = qso['NAME'].split()[0]
-
-    if 'SUBMODE' in qso:
-      qso['MODE'] = qso['SUBMODE']
-
-    image_name = card(qso, config.signature)
     if not opts.no_email:
+      image_name = card(qso, config.signature)
       try:
         send_mail(qso, image_name)
       except smtplib.SMTPRecipientsRefused:
-        logging.warning('Error Recipient "%s" malformed', qso['EMAIL'])
+        logging.warning('Error Recipient "%s" malformed', qso.email)
       else:
-        logging.info('Mail sent to %s at %s', qso['CALL'], qso['EMAIL'])
+        logging.info('Mail sent to %s at %s', qso.call, qso.email)
+
     if not opts.keep:
       os.unlink(image_name)
 
