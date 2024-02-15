@@ -57,6 +57,7 @@ warnings.filterwarnings('ignore')
 
 @dataclass
 class QSOData:
+  # pylint: disable=too-many-instance-attributes
   my_call: str
   my_gridsquare: str
   my_rig: str
