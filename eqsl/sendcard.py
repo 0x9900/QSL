@@ -15,6 +15,7 @@ import os
 import shutil
 import sys
 from argparse import ArgumentParser
+from importlib.metadata import version
 from subprocess import call
 from typing import Optional
 
@@ -31,6 +32,8 @@ logging.basicConfig(
 )
 wf_log = logging.getLogger('watchfiles.main')
 wf_log.setLevel(logging.CRITICAL)
+
+__version__ = version("e-qsl")
 
 
 def send_cards(filename: str, show_card: bool, keep_card: bool) -> None:
@@ -71,6 +74,7 @@ def main() -> None:
                       help="Path [default: %(default)s]")
   parser.add_argument("-a", "--adif", default=DEFAULT_ADIF,
                       help="ADIF file to watch [default: %(default)s]")
+  parser.add_argument("--version", action="version", version=f'eqsl.%(prog)s {__version__}')
   opts = parser.parse_args()
 
   full_name = os.path.join(opts.path, opts.adif)

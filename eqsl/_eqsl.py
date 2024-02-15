@@ -23,6 +23,8 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
+from importlib.metadata import version
+from importlib.resources import files
 from pathlib import Path
 from shutil import move
 from tempfile import NamedTemporaryFile
@@ -31,7 +33,7 @@ import adif_io
 import yaml
 from PIL import Image, ImageDraw, ImageFont
 
-__version__ = "0.2.7"
+__version__ = version("e-qsl")
 
 NEW_WIDTH = 1024
 
@@ -241,20 +243,29 @@ def _read_config():
 
 def read_config():
   _config = _read_config()
-  for font_name in ("font_call", "font_text", "font_foot"):
-    font_path = _config.get(font_name, '')
-    if not os.path.isfile(font_path):
-      logging.warning('Font "%s" not found, using the default font', font_path)
-      font_path = os.path.join(os.path.dirname(__file__), 'fonts', FONTS[font_name])
-      _config[font_name] = font_path
 
   for color_name in ('overlay_color', 'text_color'):
     _config[color_name] = tuple(_config[color_name])
 
-  card_path = _config.get('qsl_card', '')
-  if not os.path.isfile(card_path):
+  for font_name in ("font_call", "font_text", "font_foot"):
+    font_path = _config.get(font_name)
+    if not font_path:
+      logging.warning('Font "%s" not configured. Using the default font', font_name)
+      _config[font_name] = files('eqsl.fonts').joinpath(FONTS[font_name])
+    elif not os.path.isfile(font_path):
+      logging.warning('Font "%s" not found, using the default font', font_path)
+      _config[font_name] = files('eqsl.fonts').joinpath(FONTS[font_name])
+    else:
+      _config[font_name] = font_path
+
+  card_path = _config.get('qsl_card')
+  if not card_path:
+    logging.warning('QSL Card not configured. Using the default QSL Card')
+    _config['qsl_card'] = files('eqsl.card').joinpath('default.jpg')
+  elif not os.path.isfile(card_path):
     logging.warning('QSL Card "%s" not found, using the default QSL Card', card_path)
-    card_path = os.path.join(os.path.dirname(__file__), 'card', 'default.jpg')
+    _config['qsl_card'] = files('eqsl.card').joinpath('default.jpg')
+  else:
     _config['qsl_card'] = card_path
 
   return type('Config', (object, ), _config)
