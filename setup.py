@@ -40,10 +40,13 @@ def main():
     license=__license__,
     author=__author__,
     author_email='w6bsd@bsdworld.org',
-    py_modules=['eqsl'],
-    install_requires=['Pillow', 'adif_io', 'PyYAML'],
+    py_modules=['eqsl', 'sendcard'],
+    install_requires=['Pillow', 'adif_io', 'PyYAML', 'watchfiles'],
     entry_points={
-      'console_scripts': ['eqsl = eqsl:main'],
+      'console_scripts': [
+        'sendcard = sendcard:main',
+        'eqsl = eqsl:main'
+      ],
     },
     package_data={
       "sql": ["fonts/*.ttf", "cards/*.jpg"],
