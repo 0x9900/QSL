@@ -4,7 +4,7 @@
 #
 # Copyright (c) 2023, Fred W6BSD
 # All rights reserved.
-#
+# pylint: disable=eval-used
 
 import sys
 
@@ -13,7 +13,7 @@ from setuptools import setup
 __author__ = "Fred C. (W6BSD)"
 __license__ = 'BSD-3'
 
-with open('eqsl.py') as fd:
+with open('eqsl.py', 'r', encoding='utf-8') as fd:
   for line in fd:
     if line.startswith('__version__'):
       __version__ = eval(line.split('=')[-1])
