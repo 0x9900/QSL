@@ -1,0 +1,62 @@
+[build-system]
+  build-backend = "setuptools.build_meta"
+  requires = ["setuptools", "setuptools_scm[toml]", "wheel"]
+
+[project]
+  name = "e-qsl"
+  readme = "README.md"
+  description = "Send contacts confirmation cards (QSL Cards)."
+  license = {file = "LICENSE"}
+  dynamic = ["version"]
+  requires-python = ">=3.10"
+  authors = [
+    { name = "Fred C. (W6BSD)" },
+  ]
+  classifiers = [
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Telecommunications",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+  ]
+  dependencies = [
+    "Pillow",
+    "PyYAML",
+    "adif_io",
+    "watchfiles",
+  ]
+
+[tool.setuptools]
+    include-package-data = true
+
+[tool.setuptools_scm]
+    write_to = "eqsl/_version.py"
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "ipdb",
+    "flake8",
+    "mypy",
+    "isort",
+]
+
+[project.urls]
+  Documentation = "https://github.com/0x9900/QSL/"
+  Source = "https://github.com/0x9900/QSL"
+  Tracker = "https://github.com/0x9900/QSL/issues"
+
+[project.scripts]
+  eqsl = "eqsl:main"
+  sendcard = "eqsl.sendcard:main"
+
+[tool.setuptools.packages.find]
+    include = ["eqsl*"]
+
+[tool.setuptools.package-data]
+    eqsl = ["*/default.jpg", "*/*.ttf"]
+#
+#

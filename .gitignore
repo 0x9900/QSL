@@ -4,9 +4,10 @@ __pycache__/
 *$py.class
 *.ipynb
 *.swp
+*.swo
 
-sendcard.py
 upload.sh
+_version.py
 
 # C extensions
 *.so
