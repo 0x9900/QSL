@@ -22,12 +22,12 @@ jobs:
     - name: Lint check
       continue-on-error: false
       run: |
-        pylint $(git ls-files "*.py")
+        pylint $(git ls-files -- '*.py')
     - name: Running flake8
       continue-on-error: false
       run: |
-        flake8 $(git ls-files "*.py")
+        flake8 $(git ls-files -- '*.py')
     - name: Checking imports
       continue-on-error: false
       run: |
-        isort --check $(git ls-files "*.py")
+        isort --check $(git ls-files -- '*.py')
