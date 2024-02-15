@@ -23,6 +23,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
+from pathlib import Path
 from shutil import move
 from tempfile import NamedTemporaryFile
 
@@ -218,8 +219,9 @@ def qso_timestamp(day, time='0000'):
 
 
 def _read_config():
-  for path in CONFIG_LOCATIONS:
-    filename = os.path.expanduser(os.path.join(path, CONFIG_FILENAME))
+  for _path in CONFIG_LOCATIONS:
+    path = Path(_path).joinpath(CONFIG_FILENAME)
+    filename = path.expanduser()
     if os.path.exists(filename):
       logging.debug('Reading config file: %s', filename)
       try:
