@@ -14,13 +14,14 @@
   ]
   classifiers = [
     "Intended Audience :: End Users/Desktop",
-    "Intended Audience :: Telecommunications",
+    "Intended Audience :: Telecommunications Industry",
     "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python",
+    "Topic :: Communications :: Ham Radio"
   ]
   dependencies = [
     "Pillow",
