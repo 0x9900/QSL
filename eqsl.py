@@ -117,12 +117,13 @@ def get_template(qso):
   return string.Template(template + '\n' * 3).safe_substitute
 
 
-def send_mail(qso, image):
+def send_mail(qso, image, debug_email=None):
   template = get_template(qso)
+  to_addr = debug_email if debug_email else qso.email
 
   msg = MIMEMultipart()
   msg['From'] = config.smtp_from
-  msg['To'] = qso.email
+  msg['To'] = to_addr
   msg['Date'] = formatdate(localtime=True)
   msg['Subject'] = f"Digital QSL from {qso.my_call} to {qso.call}"
 
@@ -143,7 +144,7 @@ def send_mail(qso, image):
       server.starttls(context=context)
       server.ehlo()
       server.login(config.smtp_login, config.smtp_password)
-      server.sendmail(config.smtp_from, qso.email, msg.as_string())
+      server.sendmail(config.smtp_from, to_addr, msg.as_string())
   except (ConnectionRefusedError, smtplib.SMTPAuthenticationError) as err:
     logging.error('SMTP "%s" connection error %s', config.smtp_server, err)
     raise SystemExit("Exit with error") from None
@@ -299,8 +300,9 @@ def parse_args():
                       help='Do not send the mail, just generate the card only')
   parser.add_argument("-s", "--show", action="store_true", default=False,
                       help='Show the card')
-  parser.add_argument("-u", "--uniq", action="store_false", default=True,
-                      help="Never send a second QSL")
+  parser.add_argument("--resend", action="store_true", default=False,
+                      help="Resend already sent QSL")
+  parser.add_argument("--debug-email", help="Email address for debuging")
   parser.add_argument("--version", action="version", version=f'%(prog)s {__version__}')
 
   return parser.parse_args()
@@ -325,18 +327,19 @@ def main():
     except KeyError as err:
       logging.error('The adif file is missing some information: %s', err)
 
-    if opts.uniq and already_sent(qso):
+    if not opts.resend and already_sent(qso):
       logging.warning('QSL already sent to %s', qso.call)
       continue
 
     if not opts.no_email:
       image_name = card(qso, config.signature)
       try:
-        send_mail(qso, image_name)
+        send_mail(qso, image_name, opts.debug_email)
       except smtplib.SMTPRecipientsRefused:
         logging.warning('Error Recipient "%s" malformed', qso.email)
       else:
-        logging.info('Mail sent to %s at %s', qso.call, qso.email)
+        logging.info('Mail sent to %s at %s', qso.call,
+                     opts.debug_email if opts.debug_email else qso.email)
 
     if not opts.keep:
       os.unlink(image_name)
