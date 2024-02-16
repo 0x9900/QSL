@@ -1,10 +1,17 @@
 
 call: <your_call>
-gridsquare: <CM87qh>
+gridsquare: CM87sr
 myrig: Icom IC7200
 ituzone: 6
 cqzone: 3
-adif_file: /tmp/export.adif
+
+# adif_file: /tmp/export.adif
+
+# Some logging software do not export the email address in the ADIF file.
+# eqsl will try to fetch the email address from qrz.com. For that to work
+# you need to provide a qrz API key.
+# The key can be found on qrz -> logbook -> settings -> API key
+qrzr_key: 123-abc-456-def
 
 # Some logging software do not export the email address in the ADIF file.
 # eqsl will try to fetch the email address from qrz.com. For that to work
@@ -30,22 +37,108 @@ text_color: [0, 0, 77]
 # The card resolution should be at least 1024x576
 qsl_card: default.jpg
 
+# This signature will appear at the bottom of the QSL card.
 signature: Thank you for the QSO, and I will look forward for our next contact, 73
 
-mail_template: |
 
-  Hello $name, and thank you for our QSO!
+# This following lists maps a country to a mail_template.
+# If a country does not appear in the following list the default template will be used.
+languages:
+  spanish:
+    - argentina
+    - bolivia
+    - chile
+    - colombia
+    - costa rica
+    - cuba
+    - dominican republic
+    - ecuador
+    - el salvador
+    - equatorial guinea
+    - guatemala
+    - honduras
+    - mexico
+    - nicaragua
+    - panama
+    - paraguay
+    - peru
+    - puerto rico
+    - spain
+    - uruguay
+    - venezuela
+  french:
+    - benin
+    - burundi
+    - cameroon
+    - chad
+    - djibouti
+    - france
+    - french polynesia
+    - gabon
+    - guinea
+    - haiti
+    - luxembourg
+    - madagascar
+    - mali
+    - monaco
+    - new caledonia
+    - niger
+    - reunion
+    - senegal
+    - seychelles
+    - switzerland
+    - togo
+    - vanuatu
 
-  Frequency.: $freq_rx MHz
-  Band......: $band
-  Mode......: $mode
-  RST.......: $rst_sent
-  RCVD......: $rst_rcvd
-  Date......: $qso_date
 
-  Our contat has also been confirmed on LOTW.
+mail_template:
+  default: |
+    Hello $name, and thank you for our QSO!
 
-  I am looking forward for our next QSO.
+    Frequency.: $freq_rx MHz
+    Band......: $band
+    Mode......: $mode
+    RST.......: $rst_sent
+    RCVD......: $rst_rcvd
+    Date......: $qso_date
 
-  73,
-  Your friendly ham.
+    Our contat has also been confirmed on LOTW.
+
+    I am looking forward for our next QSO.
+
+    73,
+    Your friendly ham.
+
+  french: |
+    Bonjour $name, et merci pour le QSO!
+
+    Frequence.....: $frequency MHz
+    Bande.........: $band
+    Mode..........: $mode
+    RST Envoyé....: $rst_sent
+    RST Reçu......: $rst_rcvd
+    Date..........: $qso_date
+
+    Nôtre contact $mode a été confirmé sur LOTW et QRZ.
+
+    J'espère avoir le plaisir de vous recontacter très bientôt.
+
+    73,
+    $my_call
+
+  spanish: |
+    Hola $name ($call), ¡y gracias por nuestro QSO!
+
+    Frecuencia....: $frequency MHz
+    Banda.........: $band
+    Modo..........: $mode
+    RST enviado...: $rst_sent
+    RST recibido..: $rst_rcvd
+    Fecha.........: $qso_date
+
+    Nuestro contacto $mode ahora está confirmado LOTW y QRZ.
+
+    Espero con ansias nuestro próximo contacto.
+
+    73,
+    $my_call
