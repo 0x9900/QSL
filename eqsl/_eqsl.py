@@ -78,22 +78,22 @@ class QSOData:
   pota_ref: str
   lang: str
 
-  def __init__(self, qso):
+  def __init__(self, qso, cfg):
     date_on = qso.get('QSO_DATE_OFF', qso['QSO_DATE'])
     time_on = qso.get('TIME_OFF', qso.get('TIME_ON', '0000'))
 
-    self.my_call = qso['OPERATOR']
-    self.my_gridsquare = qso['MY_GRIDSQUARE']
-    self.my_rig = qso['MY_RIG']
+    self.my_call = qso.get('OPERATOR', cfg.call)
+    self.my_gridsquare = qso.get('MY_GRIDSQUARE', cfg.gridsquare)
+    self.my_rig = qso.get('MY_RIG', cfg.myrig)
     self.call = qso['CALL']
     self.frequency = float(qso['FREQ'])
     self.band = qso['BAND']
     self.mode = qso['MODE']
-    self.rst_sent = qso['RST_SENT']
-    self.rst_rcvd = qso['RST_RCVD']
-    self.tx_pwr = int(qso['TX_PWR'])
+    self.rst_sent = qso.get('RST_SENT', '599')
+    self.rst_rcvd = qso.get('RST_RCVD', '599')
+    self.tx_pwr = int(qso.get('TX_PWR', 100))
     self.timestamp = qso_timestamp(date_on, time_on)
-    self.name = qso['NAME'] if qso['NAME'] else 'Dear OM'
+    self.name = qso.get('NAME', 'Dear OM')
     self.email = qso['EMAIL']
     self.pota_ref = qso.get('POTA_REF')
     self.sota_ref = qso.get('SOTA_REF')
@@ -339,9 +339,10 @@ def main():
 
   for _qso in qsos_raw:
     try:
-      qso = QSOData(_qso)
+      qso = QSOData(_qso, config)
     except KeyError as err:
-      logging.error('The adif file is missing some information: %s', err)
+      logging.error('The ADIF file is missing the key: %s', err)
+      raise SystemExit(f'ADIF missing key: {err}') from None
 
     if not opts.resend and already_sent(qso):
       logging.warning('QSL already sent to %s', qso.call)

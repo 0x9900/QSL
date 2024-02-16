@@ -1,26 +1,24 @@
 
-call: <your call>
-ituzone: <your ituzone>
-cqzone: <your cqzone>
-adif_file: </path/to/your/logfile.adif>
+call: <your_call>
+gridsquare: <CM87qh>
+myrig: Icom IC7200
+ituzone: 6
+cqzone: 3
+adif_file: /tmp/export.adif
 
-smtp_server: <yours goes here>
-smtp_login: <yours goes here>
-smtp_password: <yours goes here>
-smtp_port: 25
-smtp_from: <yours goes here>
+smtp_server: <smtp_server>
+smtp_login: <smtp_login>
+smtp_password: <smtp_password>
+smtp_port: 468
+smtp_from: <you@email_address>
 
 # Full path the your favorite fonts
-font_call: Ubuntu Mono derivative Powerline Bold.ttf
-font_text: DroidSansMono.ttf
-font_foot: VeraMono-Italic.ttf
+# font_call: Ubuntu Mono derivative Powerline Bold.ttf
+# font_text: DroidSansMono.ttf
+# font_foot: VeraMono-Italic.ttf
 
 overlay_color: [0x00, 0x00, 0x00, 0x90]
 text_color: [0, 0, 77]
-
-# For qrz is used to get the name and email address of your contact.
-# Go on your qrz account page to get and xml api key
-qrz_key: <your key goes here>
 
 # Full path to your qsl card
 # The card resolution should be at least 1024x576
