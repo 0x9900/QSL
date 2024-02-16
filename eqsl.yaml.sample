@@ -15,7 +15,8 @@ font_call: Ubuntu Mono derivative Powerline Bold.ttf
 font_text: DroidSansMono.ttf
 font_foot: VeraMono-Italic.ttf
 
-text_color: (0, 0, 77)
+overlay_color: [0x00, 0x00, 0x00, 0x90]
+text_color: [0, 0, 77]
 
 # For qrz is used to get the name and email address of your contact.
 # Go on your qrz account page to get and xml api key
