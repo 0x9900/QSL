@@ -148,9 +148,12 @@ def send_mail(qso, image, debug_email=None):
       server.ehlo()
       server.login(config.smtp_login, config.smtp_password)
       server.sendmail(config.smtp_from, to_addr, msg.as_string())
-  except (ConnectionRefusedError, smtplib.SMTPAuthenticationError) as err:
-    logging.error('SMTP "%s" connection error %s', config.smtp_server, err)
-    raise SystemExit("Exit with error") from None
+  except ConnectionRefusedError as err:
+    logging.error('Connection "%s" error: %s', config.smtp_server, err)
+    raise SystemExit("Exit send_mail error") from None
+  except (smtplib.SMTPDataError, smtplib.SMTPAuthenticationError) as err:
+    logging.error('SMTP "%s": %s', config.smtp_server, err.smtp_error.decode('utf-8'))
+    raise SystemExit("Exit send_mail error") from None
 
 
 def card(qso, signature, image_name=None):
