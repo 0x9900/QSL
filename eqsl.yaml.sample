@@ -6,6 +6,12 @@ ituzone: 6
 cqzone: 3
 adif_file: /tmp/export.adif
 
+# Some logging software do not export the email address in the ADIF file.
+# eqsl will try to fetch the email address from qrz.com. For that to work
+# you need to provide a qrz API key.
+# The key can be found on qrz -> logbook -> settings -> API key
+qrzr_key: 123-abc-456-def
+
 smtp_server: <smtp_server>
 smtp_login: <smtp_login>
 smtp_password: <smtp_password>

@@ -30,6 +30,7 @@ from shutil import move
 from tempfile import NamedTemporaryFile
 
 import adif_io
+import qrzlib
 import yaml
 from PIL import Image, ImageDraw, ImageFont
 
@@ -94,10 +95,27 @@ class QSOData:
     self.tx_pwr = int(qso.get('TX_PWR', 100))
     self.timestamp = qso_timestamp(date_on, time_on)
     self.name = qso.get('NAME', 'Dear OM')
-    self.email = qso['EMAIL']
+    self.email = qso.get('EMAIL', self.email_lookup(self.call, cfg))
     self.pota_ref = qso.get('POTA_REF')
     self.sota_ref = qso.get('SOTA_REF')
     self.lang = qso.get('COUNTRY', 'default').lower()
+
+  def email_lookup(self, call, cfg):
+    logging.warning('Email address for %s not found in the ADIF file, using qrz.com', call)
+    try:
+      key = config.qrz_key
+    except AttributeError:
+      logging.error('Impossible to retrieve the email from qrz.com: API key missing')
+      raise SystemExit('qrz.com API key missing') from None
+
+    qrz = qrzlib.QRZ()
+    qrz.authenticate(cfg.call, key)
+    try:
+      qrz.get_call(call)
+      return qrz.email
+    except qrzlib.QRZ.NotFound:
+      logging.error('No email address found for %s', call)
+    return None
 
 
 def draw_rectangle(draw, coord, color=(0x44, 0x79, 0x9), width=1, fill=(0x75, 0xDB, 0xCD, 190)):

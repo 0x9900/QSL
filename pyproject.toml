@@ -28,6 +28,7 @@
     "PyYAML",
     "adif_io",
     "watchfiles",
+    "qrzlib",
   ]
 
 [tool.setuptools]
