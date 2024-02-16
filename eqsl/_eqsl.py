@@ -258,7 +258,8 @@ def _read_config():
         break
 
   logging.error('No configuration file found.')
-  logging.error(' >> Go to https://github.com/0x9900/QSL/ for a configuration example')
+  logging.error('Follow the link bellow to find a configuration example')
+  logging.error('https://github.com/0x9900/QSL/blob/main/eqsl.yaml.sample')
   raise SystemExit("Exit with error")
 
 
