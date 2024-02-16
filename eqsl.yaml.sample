@@ -9,7 +9,7 @@ adif_file: /tmp/export.adif
 smtp_server: <smtp_server>
 smtp_login: <smtp_login>
 smtp_password: <smtp_password>
-smtp_port: 468
+smtp_port: 587
 smtp_from: <you@email_address>
 
 # Full path the your favorite fonts
