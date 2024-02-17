@@ -22,8 +22,6 @@ from typing import Optional
 
 from watchfiles import Change, DefaultFilter, watch
 
-DEFAULT_ADIF = 'MacLoggerDX_Export.adi'
-DEFAULT_DIR = '/Users/fred/Downloads'
 SHOW_CARD = False
 KEEP_CARD = False
 
@@ -70,11 +68,11 @@ def main() -> None:
   parser.add_argument("-s", "--show", action="store_true", default=False,
                       help="Show the card")
   parser.add_argument("-k", "--keep", action="store_true", default=False,
-                      help="Keep the card in the temporary directory")
-  parser.add_argument("-p", "--path", default=DEFAULT_DIR,
-                      help="Path [default: %(default)s]")
-  parser.add_argument("-a", "--adif", default=DEFAULT_ADIF,
-                      help="ADIF file to watch [default: %(default)s]")
+                      help="Keep the cards after they have been sent (do not delete)")
+  parser.add_argument("-p", "--path", required=True,
+                      help="Directory where the ADIF file will be stored")
+  parser.add_argument("-a", "--adif", required=True,
+                      help="ADIF file name")
   parser.add_argument("--version", action="version", version=f'eqsl.%(prog)s {__version__}')
   opts = parser.parse_args()
 
