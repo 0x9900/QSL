@@ -16,6 +16,7 @@ import shutil
 import sys
 from argparse import ArgumentParser
 from importlib.metadata import version
+from pathlib import Path
 from subprocess import call
 from typing import Optional
 
@@ -36,13 +37,13 @@ wf_log.setLevel(logging.CRITICAL)
 __version__ = version("e-qsl")
 
 
-def send_cards(filename: str, show_card: bool, keep_card: bool) -> None:
+def send_cards(filename: Path, show_card: bool, keep_card: bool) -> None:
   eqsl: Optional[str] = shutil.which('eqsl')
   if not eqsl:
     raise FileNotFoundError('eqsl not found')
 
-  args: list[str] = [eqsl, '-a', filename]
-  if not os.path.exists(filename):
+  args: list[str] = [eqsl, '-a', str(filename)]
+  if not filename.exists():
     return
   if show_card:
     args.append('-s')
@@ -65,7 +66,7 @@ class ADIFilter(DefaultFilter):
 
 
 def main() -> None:
-  parser = ArgumentParser(description="DXCC entities lookup")
+  parser = ArgumentParser(description="Watch for the creation on an adif file and call eqsl")
   parser.add_argument("-s", "--show", action="store_true", default=False,
                       help="Show the card")
   parser.add_argument("-k", "--keep", action="store_true", default=False,
@@ -89,7 +90,7 @@ def main() -> None:
       continue
     for _, filename in changes:
       logging.info('Calling send_cards with %s', filename)
-      send_cards(full_name, opts.show, opts.keep)
+      send_cards(Path(full_name), opts.show, opts.keep)
 
 
 if __name__ == "__main__":
