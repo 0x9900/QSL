@@ -10,8 +10,8 @@
 
 import dbm
 import logging
+import marshal
 import os
-import pickle
 import smtplib
 import ssl
 import string
@@ -95,7 +95,9 @@ class QSOData:
     self.tx_pwr = int(qso.get('TX_PWR', 100))
     self.timestamp = qso_timestamp(date_on, time_on)
     self.name = qso.get('NAME', 'Dear OM')
-    self.email = qso.get('EMAIL', self.email_lookup(self.call, cfg))
+    self.email = qso.get('EMAIL')
+    if not self.email:
+      self.email = self.email_lookup(self.call, cfg)
     self.pota_ref = qso.get('POTA_REF')
     self.sota_ref = qso.get('SOTA_REF')
     self.lang = qso.get('COUNTRY', 'default').lower()
@@ -308,8 +310,8 @@ def already_sent(qso):
   key = f'{qso.call}-{qso.band}-{qso.mode}'.upper()
   try:
     with dbm.open(config.qsl_cache, 'r') as qdb:
-      cached = pickle.loads(qdb[key])
-    if cached.timestamp > datetime.utcnow().timestamp() - CACHE_EXPIRE:
+      cached = marshal.loads(qdb[key])
+    if cached['_cache_time'] > datetime.utcnow().timestamp() - CACHE_EXPIRE:
       return True
   except dbm.error:
     pass
@@ -318,7 +320,9 @@ def already_sent(qso):
 
   try:
     with dbm.open(config.qsl_cache, 'c') as qdb:
-      qdb[key] = pickle.dumps(qso)
+      cache = asdict(qso)
+      cache['_cache_time'] = datetime.utcnow().timestamp()
+      qdb[key] = marshal.dumps(cache)
   except IOError as err:
     logging.warning(err)
   return False
