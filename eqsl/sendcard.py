@@ -41,8 +41,6 @@ def send_cards(filename: Path, show_card: bool, keep_card: bool) -> None:
     raise FileNotFoundError('eqsl not found')
 
   args: list[str] = [eqsl, '-a', str(filename)]
-  if not filename.exists():
-    return
   if show_card:
     args.append('-s')
   if keep_card:
@@ -76,8 +74,8 @@ def main() -> None:
   parser.add_argument("--version", action="version", version=f'eqsl.%(prog)s {__version__}')
   opts = parser.parse_args()
 
-  full_name = os.path.join(opts.path, opts.adif)
-  if os.path.exists(full_name):
+  full_name = Path(opts.path, opts.adif)
+  if full_name.exists():
     logging.info('The ADIF file already exists. Sending cards.')
     send_cards(full_name, opts.show, opts.keep)
 
@@ -88,7 +86,7 @@ def main() -> None:
       continue
     for _, filename in changes:
       logging.info('Calling send_cards with %s', filename)
-      send_cards(Path(full_name), opts.show, opts.keep)
+      send_cards(full_name, opts.show, opts.keep)
 
 
 if __name__ == "__main__":
