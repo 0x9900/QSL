@@ -82,11 +82,10 @@ def main() -> None:
   watch_filter = ADIFilter(opts.path, opts.adif)
   logging.info('Sendcards watching %s for %s', opts.path, opts.adif)
   for changes in watch(opts.path, watch_filter=watch_filter, debounce=3200, recursive=False):
-    if Change.deleted in [c for c, _ in changes]:
-      continue
-    for _, filename in changes:
-      logging.info('Calling send_cards with %s', filename)
-      send_cards(full_name, opts.show, opts.keep)
+    for change, filename in changes:
+      if change == Change.added:
+        logging.info('Calling send_cards with %s', filename)
+        send_cards(filename, opts.show, opts.keep)
 
 
 if __name__ == "__main__":
