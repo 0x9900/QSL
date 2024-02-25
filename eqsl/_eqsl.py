@@ -371,6 +371,10 @@ def main():
       logging.warning('QSL already sent to %s', qso.call)
       continue
 
+    if not qso.email:
+      logging.warning('No email found for %s', qso.call)
+      continue
+
     if not opts.no_email:
       image_name = card(qso, config.signature)
       try:
