@@ -95,7 +95,7 @@ class QSOData:
     self.tx_pwr = int(qso.get('TX_PWR', 100))
     self.timestamp = qso_timestamp(date_on, time_on)
     self.name = qso.get('NAME', 'Dear OM')
-    self.email = qso.get('EMAIL')
+    self.email = os.getenv('DEBUG_EMAIL', qso.get('EMAIL'))
     if not self.email:
       self.email = self.email_lookup(self.call, cfg)
     self.pota_ref = qso.get('POTA_REF')
@@ -140,13 +140,12 @@ def get_template(qso):
   return string.Template(template + '\n' * 3).safe_substitute
 
 
-def send_mail(qso, image, debug_email=None):
+def send_mail(qso, image):
   template = get_template(qso)
-  to_addr = debug_email if debug_email else qso.email
 
   msg = MIMEMultipart()
   msg['From'] = config.smtp_from
-  msg['To'] = to_addr
+  msg['To'] = qso.email
   msg['Date'] = formatdate(localtime=True)
   msg['Subject'] = f"Digital QSL from {qso.my_call} to {qso.call}"
 
@@ -167,7 +166,7 @@ def send_mail(qso, image, debug_email=None):
       server.starttls(context=context)
       server.ehlo()
       server.login(config.smtp_login, config.smtp_password)
-      server.sendmail(config.smtp_from, to_addr, msg.as_string())
+      server.sendmail(config.smtp_from, qso.email, msg.as_string())
   except ConnectionRefusedError as err:
     logging.error('Connection "%s" error: %s', config.smtp_server, err)
     raise SystemExit("Exit send_mail error") from None
@@ -231,7 +230,7 @@ def card(qso, signature, image_name=None):
   img = img.convert("RGB")
 
   if not image_name:
-    image_name = NamedTemporaryFile(prefix='QSL-', suffix='.jpg', delete=False).name
+    image_name = NamedTemporaryFile(prefix=f'EQSL-{qso.call}-', suffix='.jpg', delete=False).name
   img.save(image_name, "JPEG", quality=80, optimize=True, progressive=True)
   if config.show_cards:
     img.show()
@@ -300,7 +299,7 @@ def move_adif(adif_file):
   dest, _ = os.path.splitext(src)
   dest = dest + '.old'
   if adif_file.name == dest:
-    logging.warning('The file "%s" cannot be moved', adif_file.name)
+    logging.debug('The file "%s" cannot be moved', adif_file.name)
   else:
     logging.info('Moving "%s" to "%s"', os.path.basename(adif_file.name), os.path.basename(dest))
     move(src, dest)
@@ -341,7 +340,6 @@ def parse_args():
                       help='Show the card')
   parser.add_argument("--resend", action="store_true", default=False,
                       help="Resend already sent QSL")
-  parser.add_argument("--debug-email", help="Email address for debuging")
   parser.add_argument("--version", action="version", version=f'%(prog)s {__version__}')
 
   return parser.parse_args()
@@ -359,38 +357,33 @@ def main():
   except IndexError:
     logging.error('Error reading the ADIF file "%s"', opts.adif_file.name)
     raise SystemExit("Exit with error") from None
+  finally:
+    opts.adif_file.close()
+  if not opts.keep:
+    move_adif(opts.adif_file)
 
-  for _qso in qsos_raw:
+  # Load all the QSOs information.
+  all_qso = []
+  for qso in qsos_raw:
     try:
-      qso = QSOData(_qso, config)
+      all_qso.append(QSOData(qso, config))
     except KeyError as err:
-      logging.error('The ADIF file is missing the key: %s', err)
-      raise SystemExit(f'ADIF missing key: {err}') from None
+      logging.error('Record ignored the ADIF file is missing the key: %s', err)
 
+  # Send cards
+  for qso in all_qso:
+    image_name = card(qso, config.signature)
     if not opts.resend and already_sent(qso):
-      logging.warning('QSL already sent to %s', qso.call)
+      logging.warning('QSL for %s already sent to %s', qso.call, qso.email)
       continue
-
     if not qso.email:
       logging.warning('No email found for %s', qso.call)
       continue
 
-    if not opts.no_email:
-      image_name = card(qso, config.signature)
-      try:
-        send_mail(qso, image_name, opts.debug_email)
-      except smtplib.SMTPRecipientsRefused:
-        logging.warning('Error Recipient "%s" malformed', qso.email)
-      else:
-        logging.info('Mail sent to %s at %s', qso.call,
-                     opts.debug_email if opts.debug_email else qso.email)
-
-    if not opts.keep:
-      os.unlink(image_name)
-
-  opts.adif_file.close()
-  if not opts.keep:
-    move_adif(opts.adif_file)
+    try:
+      send_mail(qso, image_name)
+    except smtplib.SMTPRecipientsRefused:
+      logging.warning('Error Recipient "%s" malformed', qso.email)
 
 
 if __name__ == "__main__":
