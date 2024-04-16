@@ -22,7 +22,6 @@ from typing import Optional
 from watchfiles import Change, DefaultFilter, watch
 
 SHOW_CARD = False
-KEEP_CARD = False
 
 logging.basicConfig(
   format="%(asctime)s %(name)s:%(lineno)d %(levelname)s - %(message)s",
@@ -34,16 +33,14 @@ wf_log.setLevel(logging.CRITICAL)
 __version__ = version("e-qsl")
 
 
-def send_cards(filename: Path, show_card: bool, keep_card: bool) -> None:
+def send_cards(filename: Path, show_card: bool) -> None:
   eqsl: Optional[str] = shutil.which('eqsl')
   if not eqsl:
     raise FileNotFoundError('eqsl not found')
 
-  args: list[str] = [eqsl, '-a', str(filename)]
+  args: list[str] = [eqsl, '-k', '-a', str(filename)]
   if show_card:
     args.append('-s')
-  if keep_card:
-    args.append('-k')
 
   logging.info('Command: %s', ' '.join(args))
   call(args)
@@ -64,8 +61,6 @@ def sendcard() -> None:
   parser = ArgumentParser(description="Watch for the creation on an adif file and call eqsl")
   parser.add_argument("-s", "--show", action="store_true", default=False,
                       help="Show the card")
-  parser.add_argument("-k", "--keep", action="store_true", default=False,
-                      help="Keep the cards after they have been sent (do not delete)")
   parser.add_argument("-a", "--adif", required=True,
                       help="ADIF file name")
   parser.add_argument("--version", action="version", version=f'eqsl.%(prog)s {__version__}')
@@ -74,7 +69,10 @@ def sendcard() -> None:
   full_name = Path(opts.adif).expanduser().absolute()
   if full_name.exists():
     logging.info('The ADIF file already exists. Sending cards.')
-    send_cards(full_name, opts.show, opts.keep)
+    try:
+      send_cards(full_name, opts.show)
+    except FileNotFoundError as err:
+      logging.debug(err)
 
   path = full_name.parent
   adif_file = full_name.parts[-1]
@@ -84,11 +82,10 @@ def sendcard() -> None:
 
   watch_filter = ADIFilter(path, adif_file)
   logging.info('Sendcards watching %s for %s', path, adif_file)
-  for changes in watch(path, watch_filter=watch_filter, debounce=3200, recursive=False):
+  for changes in watch(path, watch_filter=watch_filter, recursive=False):
     for change, filename in changes:
-      if change == Change.added:
-        logging.info('Calling send_cards with %s', filename)
-        send_cards(filename, opts.show, opts.keep)
+      if change in (Change.added, Change.modified):
+        send_cards(filename, opts.show)
 
 
 def main():
