@@ -18,7 +18,7 @@ import string
 import warnings
 from argparse import ArgumentParser, FileType
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -212,8 +212,8 @@ def card(qso, signature, image_name=None):
   textbox.text((x_pos, y_pos+65), f'Date: {date}', font=font_text, fill=config.text_color)
   textbox.text((x_pos, y_pos+90), f' Rig: {qso.my_rig} • Power: {int(qso.tx_pwr):d} Watt',
                font=font_text, fill=config.text_color)
-  textbox.text((x_pos, y_pos+115), (f'Grid: {qso.my_gridsquare} • CQ Zone: {config.ituzone} • '
-                                    f'ITU Zone: {config.cqzone}'),
+  textbox.text((x_pos, y_pos+115), (f'Grid: {qso.my_gridsquare} • ITU Zone: {config.ituzone} • '
+                                    f'CQ Zone: {config.cqzone}'),
                font=font_text, fill=config.text_color)
   if qso.sota_ref:
     textbox.text((x_pos, y_pos+140), f'SOTA: Summit Reference ({qso.sota_ref})',
@@ -310,7 +310,7 @@ def already_sent(qso):
   try:
     with dbm.open(config.qsl_cache, 'r') as qdb:
       cached = marshal.loads(qdb[key])
-    if cached['_cache_time'] > datetime.utcnow().timestamp() - CACHE_EXPIRE:
+    if cached['_cache_time'] > datetime.now(timezone.utc).timestamp() - CACHE_EXPIRE:
       return True
   except dbm.error:
     pass
@@ -320,7 +320,7 @@ def already_sent(qso):
   try:
     with dbm.open(config.qsl_cache, 'c') as qdb:
       cache = asdict(qso)
-      cache['_cache_time'] = datetime.utcnow().timestamp()
+      cache['_cache_time'] = datetime.now(timezone.utc).timestamp()
       qdb[key] = marshal.dumps(cache)
   except IOError as err:
     logging.warning(err)
