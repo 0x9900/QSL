@@ -120,6 +120,10 @@ class QSOData:
     return None
 
 
+def clean_string(input_string):
+  return ''.join([char if char.isalnum() else '_' for char in input_string])
+
+
 def draw_rectangle(draw, coord, color=(0x44, 0x79, 0x9), width=1, fill=(0x75, 0xDB, 0xCD, 190)):
   draw.rectangle(coord, outline=color, fill=fill)
   draw.rectangle(coord, outline=color, width=width)
@@ -230,7 +234,8 @@ def card(qso, signature, image_name=None):
   img = img.convert("RGB")
 
   if not image_name:
-    image_name = NamedTemporaryFile(prefix=f'EQSL-{qso.call}-', suffix='.jpg', delete=False).name
+    image_name = NamedTemporaryFile(prefix=f'EQSL-{clean_string(qso.call)}-',
+                                    suffix='.jpg', delete=False).name
   img.save(image_name, "JPEG", quality=80, optimize=True, progressive=True)
   if config.show_cards:
     img.show()
