@@ -158,6 +158,7 @@ def send_mail(qso, image):
 
   msg.attach(MIMEText(template(data)))
 
+  logging.info('Sending qsl to: %s', qso.email)
   with open(image, "rb") as fdi:
     part = MIMEApplication(fdi.read(), Name=os.path.basename(image))
     part['Content-Disposition'] = f'attachment; filename="{os.path.basename(image)}"'

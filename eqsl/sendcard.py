@@ -28,7 +28,7 @@ logging.basicConfig(
   level=logging.INFO
 )
 wf_log = logging.getLogger('watchfiles.main')
-wf_log.setLevel(logging.CRITICAL)
+wf_log.setLevel(logging.INFO)
 
 __version__ = version("e-qsl")
 
@@ -38,7 +38,7 @@ def send_cards(filename: Path, show_card: bool) -> None:
   if not eqsl:
     raise FileNotFoundError('eqsl not found')
 
-  args: list[str] = [eqsl, '-k', '-a', str(filename)]
+  args: list[str] = [eqsl, '-a', str(filename)]
   if show_card:
     args.append('-s')
 
@@ -84,8 +84,13 @@ def sendcard() -> None:
   logging.info('Sendcards watching %s for %s', path, adif_file)
   for changes in watch(path, watch_filter=watch_filter, recursive=False):
     for change, filename in changes:
+      filename = Path(filename)
       if change in (Change.added, Change.modified):
+        if not filename.exists():
+          continue
+        logging.info('Sending cards...')
         send_cards(filename, opts.show)
+        logging.info('All the card sent. Back to watching %s', path)
 
 
 def main():
