@@ -18,7 +18,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pylint isort flake8
-        pip install adif_io PyYAML Pillow watchfiles qrzlib
+        pip install adif_io PyYAML Pillow watchfiles qrzlib jinja2
     - name: Lint check
       continue-on-error: false
       run: |
