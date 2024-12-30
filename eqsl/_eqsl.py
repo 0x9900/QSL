@@ -14,12 +14,11 @@ import marshal
 import os
 import smtplib
 import ssl
-import string
 import warnings
 from argparse import ArgumentParser, FileType
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from email.mime.application import MIMEApplication
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
@@ -30,6 +29,7 @@ from shutil import move
 from tempfile import NamedTemporaryFile
 
 import adif_io
+import jinja2
 import qrzlib
 import yaml
 from PIL import Image, ImageDraw, ImageFont
@@ -129,25 +129,24 @@ def draw_rectangle(draw, coord, color=(0x44, 0x79, 0x9), width=1, fill=(0x75, 0x
   draw.rectangle(coord, outline=color, width=width)
 
 
-def get_template(qso):
-  # there is only one email template
-  if hasattr(config, 'mail_template'):
-    return string.Template(config.mail_template + '\n' * 3).safe_substitute
-  if not hasattr(config, 'mail_templates') or not hasattr(config, 'languages'):
-    raise KeyError('Not mail template or language found')
+def build_template(data, cid):
+  if template := getattr(config, 'mail_templates'):
+    languages = {v.lower(): k.lower() for k, values in config.languages.items() for v in values}
+    lang = languages.get(data['lang'], 'default')
+    logging.info('Using %s template for %s', lang, data['lang'])
+    mail_template = jinja2.Template(template.get(lang, "default"))
+  elif template := getattr(config, 'mail_template'):
+    mail_template = jinja2.Template(template)
+  else:
+    raise KeyError('No email templates found')
 
-  languages = {v.lower(): k.lower() for k, values in config.languages.items() for v in values}
-  lang = languages.get(qso.lang, 'default')
-  if lang != 'default':
-    logging.info('Using %s template for %s', lang, qso.lang)
-  template = config.mail_templates.get(lang, "default")
-  return string.Template(template + '\n' * 3).safe_substitute
+  html_content = mail_template.render(data=data, cid=cid)
+  return html_content
 
 
 def send_mail(qso, image):
-  template = get_template(qso)
-
-  msg = MIMEMultipart()
+  cid = f'image_{hash(image) % 10000}'
+  msg = MIMEMultipart("related")
   msg['From'] = config.smtp_from
   msg['To'] = qso.email
   msg['Date'] = formatdate(localtime=True)
@@ -156,13 +155,15 @@ def send_mail(qso, image):
   data = asdict(qso)
   data['qso_date'] = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X UTC")
 
-  msg.attach(MIMEText(template(data)))
+  email_content = build_template(data, cid)
+  msg.attach(MIMEText(email_content, "html"))
 
   logging.info('Sending qsl to: %s', qso.email)
   with open(image, "rb") as fdi:
-    part = MIMEApplication(fdi.read(), Name=os.path.basename(image))
-    part['Content-Disposition'] = f'attachment; filename="{os.path.basename(image)}"'
-    msg.attach(part)
+    img = MIMEImage(fdi.read())
+    img.add_header("Content-ID", cid)
+    img.add_header("Content-Disposition", "inline", filename=f"{os.path.basename(image)}")
+    msg.attach(img)
 
   context = ssl.create_default_context()
   try:

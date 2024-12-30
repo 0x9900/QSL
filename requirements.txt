@@ -1,5 +1,6 @@
 PyYAML
 adif_io
+jinja2
 pillow
-watchfiles
 pre-commit
+watchfiles
