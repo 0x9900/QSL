@@ -77,6 +77,7 @@ class QSOData:
   email: str
   sota_ref: str
   pota_ref: str
+  country: str
   lang: str
 
   def __init__(self, qso, cfg):
@@ -100,6 +101,7 @@ class QSOData:
       self.email = self.email_lookup(self.call, cfg)
     self.pota_ref = qso.get('POTA_REF')
     self.sota_ref = qso.get('SOTA_REF')
+    self.country = qso.get('COUNTRY', '').title()
     self.lang = qso.get('COUNTRY', 'default').lower()
 
   def email_lookup(self, call, cfg):
