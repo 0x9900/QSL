@@ -93,7 +93,7 @@ class QSOData:
     self.mode = qso['MODE']
     self.rst_sent = qso.get('RST_SENT', '599')
     self.rst_rcvd = qso.get('RST_RCVD', '599')
-    self.tx_pwr = int(qso.get('TX_PWR', 100))
+    self.tx_pwr = float(qso.get('TX_PWR', '100').upper().replace('W', ''))
     self.timestamp = qso_timestamp(date_on, time_on)
     self.name = qso.get('NAME', 'Dear OM')
     self.email = os.getenv('DEBUG_EMAIL', qso.get('EMAIL'))
