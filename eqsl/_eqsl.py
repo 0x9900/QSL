@@ -158,7 +158,11 @@ def send_mail(qso, image):
   data['qso_date'] = datetime.fromtimestamp(qso.timestamp).strftime("%A %B %d, %Y at %X UTC")
 
   email_content = build_template(data, cid)
-  msg.attach(MIMEText(email_content, "html"))
+  # Convert plain text to HTML by replacing line breaks with <br> tags
+  html_content = email_content.replace('\n', '<br>\n')
+  # Wrap in basic HTML structure with monospace font
+  html_content = f"<html><body style='font-family: \"Courier New\", Courier, \"Lucida Console\", Monaco, monospace; line-height: 1.6;'>{html_content}</body></html>"
+  msg.attach(MIMEText(html_content, "html"))
 
   logging.info('Sending qsl to: %s', qso.email)
   with open(image, "rb") as fdi:
