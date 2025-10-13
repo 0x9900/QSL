@@ -247,7 +247,10 @@ def card(qso, signature, image_name=None):
 
 
 def qso_timestamp(day, time='0000'):
-  _dt = datetime.strptime(day + time[:-2], '%Y%m%d%H%M')
+  # if time includes seconds truncate it
+  if len(time) > 4:
+    time = time[:4]
+  _dt = datetime.strptime(day + time, '%Y%m%d%H%M')
   return _dt.timestamp()
 
 
