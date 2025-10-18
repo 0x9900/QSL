@@ -389,10 +389,13 @@ def main():
       logging.warning('No email found for %s', qso.call)
       continue
 
-    try:
-      send_mail(qso, image_name)
-    except smtplib.SMTPRecipientsRefused:
-      logging.warning('Error Recipient "%s" malformed', qso.email)
+    if not opts.no_email:
+      try:
+        send_mail(qso, image_name)
+      except smtplib.SMTPRecipientsRefused:
+        logging.warning('Error Recipient "%s" malformed', qso.email)
+    else:
+      logging.info('Email sending disabled (-n option), QSL card generated: %s', image_name)
 
 
 if __name__ == "__main__":
