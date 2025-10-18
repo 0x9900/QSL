@@ -59,8 +59,6 @@ logging.basicConfig(
 
 warnings.filterwarnings('ignore')
 
-qrz = None
-
 
 @lru_cache(1)
 def qrz_connect(user, key):
@@ -68,8 +66,8 @@ def qrz_connect(user, key):
   try:
     qrz.authenticate(user, key)
   except qrz.SessionError as err:
-    logging.error(err)
-    raise SystemExit('qrz.com error: %s', err.args[0].decode())
+    logging.error('qrz.com error: %s', err.args[0].decode())
+    raise SystemExit(err) from None
   return qrz
 
 
