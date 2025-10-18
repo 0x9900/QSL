@@ -45,6 +45,8 @@ dev = [
     "flake8",
     "mypy",
     "isort",
+    "pytest",
+    "pytest-cov",
 ]
 
 [project.urls]
