@@ -58,6 +58,8 @@ logging.basicConfig(
 
 warnings.filterwarnings('ignore')
 
+qrz = None
+
 
 @dataclass
 class QSOData:
@@ -95,30 +97,39 @@ class QSOData:
     self.rst_rcvd = qso.get('RST_RCVD', '599')
     self.tx_pwr = float(qso.get('TX_PWR', '100').upper().replace('W', ''))
     self.timestamp = qso_timestamp(date_on, time_on)
-    self.name = qso.get('NAME', 'Dear OM')
+    call_info = self.call_info_lookup(self.call, cfg)
     self.email = os.getenv('DEBUG_EMAIL', qso.get('EMAIL'))
-    if not self.email:
-      self.email = self.email_lookup(self.call, cfg)
+    if call_info:
+      if not self.email:
+        self.email = call_info.email
+      self.name = call_info.name_fmt
+
     self.pota_ref = qso.get('POTA_REF')
     self.sota_ref = qso.get('SOTA_REF')
     self.country = qso.get('COUNTRY', '').title()
     self.lang = qso.get('COUNTRY', 'default').lower()
 
-  def email_lookup(self, call, cfg):
-    logging.warning('Email address for %s not found in the ADIF file, using qrz.com', call)
+  def call_info_lookup(self, call, cfg):
+    """Look up call information from QRZ.com"""
     try:
       key = config.qrz_key
     except AttributeError:
-      logging.error('Impossible to retrieve the email from qrz.com: API key missing')
+      logging.error('Impossible to retrieve call info from qrz.com: API key missing')
       raise SystemExit('qrz.com API key missing') from None
-
-    qrz = qrzlib.QRZ()
-    qrz.authenticate(cfg.call, key)
+    global qrz
+    if qrz is None:
+      qrz = qrzlib.QRZ()
+      qrz.authenticate(cfg.call, key)
     try:
-      qrz.get_call(call)
-      return qrz.email
+      call_info = qrz.get_call(call)
+      if call_info is None and "/" in call:
+        call_info = qrz.get_call(call.split("/")[0])
+      if call_info is None:
+        logging.error('No call info found for %s', call)
+        return None
+      return call_info
     except qrzlib.QRZ.NotFound:
-      logging.error('No email address found for %s', call)
+      logging.error('No call info found for %s', call)
     return None
 
 
