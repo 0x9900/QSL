@@ -22,6 +22,7 @@ from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
+from functools import lru_cache
 from importlib.metadata import version
 from importlib.resources import files
 from pathlib import Path
@@ -61,6 +62,17 @@ warnings.filterwarnings('ignore')
 qrz = None
 
 
+@lru_cache(1)
+def qrz_connect(user, key):
+  qrz = qrzlib.QRZ()
+  try:
+    qrz.authenticate(user, key)
+  except qrz.SessionError as err:
+    logging.error(err)
+    raise SystemExit('qrz.com error: %s', err.args[0].decode())
+  return qrz
+
+
 @dataclass
 class QSOData:
   # pylint: disable=too-many-instance-attributes
@@ -97,11 +109,15 @@ class QSOData:
     self.rst_rcvd = qso.get('RST_RCVD', '599')
     self.tx_pwr = float(qso.get('TX_PWR', '100').upper().replace('W', ''))
     self.timestamp = qso_timestamp(date_on, time_on)
-    call_info = self.call_info_lookup(self.call, cfg)
+
     self.email = os.getenv('DEBUG_EMAIL', qso.get('EMAIL'))
-    if call_info:
-      if not self.email:
-        self.email = call_info.email
+    if not self.email:
+      call_info = self.call_info_lookup(self.call, cfg)
+      self.email = call_info.email
+
+    self.name = qso.get('NAME')
+    if not self.name:
+      call_info = self.call_info_lookup(self.call, cfg)
       self.name = call_info.name_fmt
 
     self.pota_ref = qso.get('POTA_REF')
@@ -109,28 +125,26 @@ class QSOData:
     self.country = qso.get('COUNTRY', '').title()
     self.lang = qso.get('COUNTRY', 'default').lower()
 
-  def call_info_lookup(self, call, cfg):
+  @staticmethod
+  @lru_cache
+  def call_info_lookup(call, cfg):
     """Look up call information from QRZ.com"""
-    try:
-      key = config.qrz_key
-    except AttributeError:
+    if not hasattr(config, 'qrz_key'):
       logging.error('Impossible to retrieve call info from qrz.com: API key missing')
       raise SystemExit('qrz.com API key missing') from None
-    global qrz
-    if qrz is None:
-      qrz = qrzlib.QRZ()
-      qrz.authenticate(cfg.call, key)
+
+    qrz = qrz_connect(cfg.call, cfg.qrz_key)
     try:
       call_info = qrz.get_call(call)
       if call_info is None and "/" in call:
         call_info = qrz.get_call(call.split("/")[0])
-      if call_info is None:
-        logging.error('No call info found for %s', call)
-        return None
+        if call_info is None:
+          logging.error('No call info found for %s', call)
+          return None
       return call_info
     except qrzlib.QRZ.NotFound:
       logging.error('No call info found for %s', call)
-    return None
+      return None
 
 
 def clean_string(input_string):

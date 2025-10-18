@@ -28,7 +28,7 @@
     "PyYAML",
     "adif_io",
     "watchfiles",
-    "qrzlib",
+    "qrzlib>=2.0.0",
     "jinja2>=3.1.6",
 ]
 

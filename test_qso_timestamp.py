@@ -5,11 +5,6 @@ Tests the core functionality: 4-character and 6-character timestamp handling.
 """
 
 from datetime import datetime
-import sys
-import os
-
-# Add the current directory to the path so we can import the module
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from eqsl._eqsl import qso_timestamp
 
